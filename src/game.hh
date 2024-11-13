@@ -1,4 +1,5 @@
-#include <iostream>
+
+const float MOVE_INTERVAL = 0.2f;
 
 typedef enum {
     LVL1,

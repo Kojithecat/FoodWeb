@@ -1,6 +1,15 @@
 #include "game.hh"
 #include "raylib.h"
+#include <cstdint>
 #include <vector>
+#include <random>
+#include <iostream>
+#include <queue>
+
+using u32 = uint_least32_t;
+using engine = std::mt19937;
+
+
 
 struct Player {
 
@@ -36,29 +45,76 @@ SCREEN showMenuScreen(){
 
 SCREEN runTestLevel(){
     std::vector<std::vector<bool>> filledMap(GetScreenWidth()/50, std::vector<bool>(GetScreenHeight()/50,true));
-    Coord playerPosition;
-    playerPosition.x = 0;
-    playerPosition.y = 0;
+    Player p;
+    p.x = 0;
+    p.y = 0;
+    Player e;
+    e.x = 650;
+    e.y = 300;
+    std::random_device os_seed;
+    const u32 seed = os_seed();
+    engine generator(seed);
+    std::uniform_int_distribution<u32> distribute(1,4);
+    float moveTimer = 0.0f;
+    std::queue<char> playerMoves;
     while(!IsKeyPressed(KEY_ESCAPE)){
+
+        moveTimer += GetFrameTime();
+        if(IsKeyPressed(KEY_W))// && p.y > 0)
+            playerMoves.push('w');//p.y -= 50;
+        if(IsKeyPressed(KEY_A))// && p.x > 0)
+            playerMoves.push('a');//p.x -= 50;
+        if(IsKeyPressed(KEY_S))// && GetScreenHeight()-50 > p.y)
+            playerMoves.push('s');//p.y += 50;
+        if(IsKeyPressed(KEY_D))// && GetScreenWidth()-50 > p.x)
+            playerMoves.push('d');//p.x +=50;
+
+        if(moveTimer >=MOVE_INTERVAL){
+            //Player movement
+            if(!playerMoves.empty()){
+                char Pmov = playerMoves.back();
+                if(Pmov == 'w' && p.y > 0)
+                    p.y -= 50;
+                if(Pmov == 'a' && p.x > 0)
+                    p.x -= 50;
+                if(Pmov == 's' && GetScreenHeight()-50 > p.y)
+                    p.y += 50;
+                if(Pmov == 'd' && GetScreenWidth()-50 > p.x)
+                    p.x +=50;
+                filledMap[p.x/50][p.y/50] = false;
+            }
+            //Enemy movement
+            int Emov = distribute(generator);
+            if(Emov==1 && e.y > 0)
+                e.y -= 50;
+            if(Emov==2 && e.x > 0)
+                e.x -= 50;
+            if(Emov==3 && GetScreenHeight()-50 > e.y)
+                e.y += 50;
+            if(Emov==4 && GetScreenWidth()-50 > e.x)
+                e.x +=50;
+
+            filledMap[e.x/50][e.y/50] = false;
+            moveTimer = 0.0f;
+
+            //Clear movement queue
+            playerMoves = std::queue<char>();
+
+        }
+
         BeginDrawing();
             ClearBackground(RAYWHITE);
             for(int i = 0; i < filledMap.size(); i++){
                 for(int j = 0; j < filledMap[i].size(); j++){
                     if(filledMap[i][j]) DrawRectangle(i*50, j*50, 50, 50, ORANGE);
+                    }
                 }
-            }
-            DrawRectangle(playerPosition.x, playerPosition.y, 50, 50, BLACK);
+            DrawRectangle(p.x, p.y, 50, 50, BLACK);
+            DrawRectangle(e.x,e.y, 50, 50, RED);
         EndDrawing();
-
-        if(IsKeyPressed(KEY_W) && playerPosition.y > 0)
-            playerPosition.y -= 50;
-        if(IsKeyPressed(KEY_A) && playerPosition.x > 0)
-            playerPosition.x -= 50;
-        if(IsKeyPressed(KEY_S) && GetScreenHeight() > playerPosition.y)
-            playerPosition.y += 50;
-        if(IsKeyPressed(KEY_D) && GetScreenWidth() > playerPosition.x)
-            playerPosition.x +=50;
-        filledMap[playerPosition.x/50][playerPosition.y/50] = false;
+        //Check player's death'
+        if(e.x == p.x && e.y == p.y) return MENUSCREEN;
     }
     return MENUSCREEN;
+
 }
