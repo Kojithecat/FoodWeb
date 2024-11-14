@@ -51,6 +51,9 @@ SCREEN runTestLevel(){
     Player e;
     e.x = 650;
     e.y = 300;
+    Player w;
+    w.x = GetScreenWidth()-50;
+    w.y = GetScreenHeight()-50;
     std::random_device os_seed;
     const u32 seed = os_seed();
     engine generator(seed);
@@ -60,13 +63,13 @@ SCREEN runTestLevel(){
     while(!IsKeyPressed(KEY_ESCAPE)){
 
         moveTimer += GetFrameTime();
-        if(IsKeyPressed(KEY_W))// && p.y > 0)
+        if(IsKeyDown(KEY_W))// && p.y > 0)
             playerMoves.push('w');//p.y -= 50;
-        if(IsKeyPressed(KEY_A))// && p.x > 0)
+        if(IsKeyDown(KEY_A))// && p.x > 0)
             playerMoves.push('a');//p.x -= 50;
-        if(IsKeyPressed(KEY_S))// && GetScreenHeight()-50 > p.y)
+        if(IsKeyDown(KEY_S))// && GetScreenHeight()-50 > p.y)
             playerMoves.push('s');//p.y += 50;
-        if(IsKeyPressed(KEY_D))// && GetScreenWidth()-50 > p.x)
+        if(IsKeyDown(KEY_D))// && GetScreenWidth()-50 > p.x)
             playerMoves.push('d');//p.x +=50;
 
         if(moveTimer >=MOVE_INTERVAL){
@@ -109,11 +112,14 @@ SCREEN runTestLevel(){
                     if(filledMap[i][j]) DrawRectangle(i*50, j*50, 50, 50, ORANGE);
                     }
                 }
+
+            DrawRectangle(w.x, w.y, 50, 50, GREEN);
             DrawRectangle(p.x, p.y, 50, 50, BLACK);
             DrawRectangle(e.x,e.y, 50, 50, RED);
         EndDrawing();
         //Check player's death'
         if(e.x == p.x && e.y == p.y) return MENUSCREEN;
+        if(w.x == p.x && w.y == p.y) return LVL1;
     }
     return MENUSCREEN;
 
