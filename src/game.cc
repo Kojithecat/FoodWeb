@@ -28,16 +28,22 @@ SCREEN showMenuScreen(){
 }
 
 SCREEN runTestLevel(){
-    std::vector<std::vector<bool>> filledMap(GetScreenWidth()/50, std::vector<bool>(GetScreenHeight()/50,true));
-    Player p = initPlayer(0, 0);
-    Enemy e1 = initEnemy(650,300,RAT);
-    Enemy e2 = initEnemy(300, 300, BAT);
-    Player w;
-    w.x = GetScreenWidth()-50;
-    w.y = GetScreenHeight()-50;
-    //Uniform random umber generator from 1 to 4
-    float moveTimer = 0.0f;
+    std::vector<std::vector<bool>> filledMap(GetScreenWidth()/TILESIZE, std::vector<bool>(GetScreenHeight()/TILESIZE,true));
 
+    filledMap[13][5] = false;
+    filledMap[13][6] = false;
+    filledMap[13][7] = false;
+
+    filledMap[6][5] = false;
+    filledMap[6][6] = false;
+    filledMap[6][7] = false;
+
+
+    Player p = initPlayer(0, 0);
+    Enemy e1 = initEnemy(13*TILESIZE,6*TILESIZE,RAT);
+    Enemy e2 = initEnemy(6*TILESIZE, 6*TILESIZE, BAT);
+    LevelGoal w = initGoal(GetScreenWidth()-TILESIZE, GetScreenHeight()-TILESIZE, true);
+    //Uniform random umber generator from 1 to 4
 
     while(!IsKeyPressed(KEY_ESCAPE)){
 
@@ -54,13 +60,13 @@ SCREEN runTestLevel(){
             ClearBackground(RAYWHITE);
             for(int i = 0; i < filledMap.size(); i++){
                 for(int j = 0; j < filledMap[i].size(); j++){
-                    if(filledMap[i][j]) DrawRectangle(i*50, j*50, 50, 50, ORANGE);
+                    if(filledMap[i][j]) DrawRectangle(i*TILESIZE, j*TILESIZE, TILESIZE, TILESIZE, ORANGE);
                     }
                 }
-            DrawRectangle(w.x, w.y, 50, 50, GREEN);
-            DrawRectangle(p.x, p.y, 50, 50, BLACK);
-            DrawRectangle(e1.x,e1.y, 50, 50, RED);
-            DrawRectangle(e2.x,e2.y, 50, 50, RED);
+            DrawRectangle(w.x, w.y, TILESIZE, TILESIZE, GREEN);
+            DrawRectangle(p.x, p.y, TILESIZE, TILESIZE, BLACK);
+            DrawRectangle(e1.x,e1.y, TILESIZE, TILESIZE, RED);
+            DrawRectangle(e2.x,e2.y, TILESIZE, TILESIZE, RED);
 
         EndDrawing();
         //Check player's death'
@@ -90,16 +96,25 @@ Enemy initEnemy(int x, int y, ETYPE type){
     return e;
 }
 
+LevelGoal initGoal(int x, int y, bool open){
+    LevelGoal g;
+    g.x = x;
+    g.y = y;
+    g.open = open;
+
+    return g;
+}
+
 void checkPlayerMovement(Player &p){
 
     if(IsKeyDown(KEY_W))// && p.y > 0)
-        p.playerMoves.push('w');//p.y -= 50;
+        p.playerMoves.push('w');//p.y -= TILESIZE;
     if(IsKeyDown(KEY_A))// && p.x > 0)
-        p.playerMoves.push('a');//p.x -= 50;
-    if(IsKeyDown(KEY_S))// && GetScreenHeight()-50 > p.y)
-        p.playerMoves.push('s');//p.y += 50;
-    if(IsKeyDown(KEY_D))// && GetScreenWidth()-50 > p.x)
-        p.playerMoves.push('d');//p.x +=50;
+        p.playerMoves.push('a');//p.x -= TILESIZE;
+    if(IsKeyDown(KEY_S))// && GetScreenHeight()-TILESIZE > p.y)
+        p.playerMoves.push('s');//p.y += TILESIZE;
+    if(IsKeyDown(KEY_D))// && GetScreenWidth()-TILESIZE > p.x)
+        p.playerMoves.push('d');//p.x +=TILESIZE;
 }
 
 void movePlayer(Player &p, std::vector<std::vector<bool>> &map){
@@ -109,14 +124,14 @@ void movePlayer(Player &p, std::vector<std::vector<bool>> &map){
         if(!p.playerMoves.empty()){
             char Pmov = p.playerMoves.back();
             if(Pmov == 'w' && p.y > 0)
-                p.y -= 50;
+                p.y -= TILESIZE;
             if(Pmov == 'a' && p.x > 0)
-                p.x -= 50;
-            if(Pmov == 's' && GetScreenHeight()-50 > p.y)
-                p.y += 50;
-            if(Pmov == 'd' && GetScreenWidth()-50 > p.x)
-                p.x +=50;
-            map[p.x/50][p.y/50] = false;
+                p.x -= TILESIZE;
+            if(Pmov == 's' && GetScreenHeight()-TILESIZE > p.y)
+                p.y += TILESIZE;
+            if(Pmov == 'd' && GetScreenWidth()-TILESIZE > p.x)
+                p.x +=TILESIZE;
+            map[p.x/TILESIZE][p.y/TILESIZE] = false;
         }
         p.moveTime = 0.0f;
         //Clear movement queue
@@ -127,22 +142,33 @@ void movePlayer(Player &p, std::vector<std::vector<bool>> &map){
 
 void moveEnemy(Enemy &e, std::vector<std::vector<bool>> &map){
 
+    int width = GetScreenWidth();
+    int height = GetScreenHeight();
+
+    int relx = e.x/TILESIZE; //Tile position
+    int rely = e.y/TILESIZE;
+
+    bool leftFilled = relx > 0 && map[relx-1][rely];
+    bool rightFilled = relx < width -1 && map[relx+1][rely];
+    bool topFilled = rely > 0 && map[relx][rely-1];
+    bool botFilled = rely < height -1 && map[relx][rely+1];
+
+
     switch(e.type){
         case BAT:
             if(e.moveTime >= BAT_MOVE_INTERVAL){
                 //Enemy movement
                 int Emov = distribute(generator);
-                if(Emov==1 && e.y > 0)
-                    e.y -= 50;
-                if(Emov==2 && e.x > 0)
-                    e.x -= 50;
-                if(Emov==3 && GetScreenHeight()-50 > e.y)
-                    e.y += 50;
-                if(Emov==4 && GetScreenWidth()-50 > e.x)
-                    e.x +=50;
+                if(Emov==1 && e.y > 0 && !topFilled)
+                    e.y -= TILESIZE;
+                if(Emov==2 && e.x > 0 && !leftFilled)
+                    e.x -= TILESIZE;
+                if(Emov==3 && GetScreenHeight()-TILESIZE > e.y && !botFilled)
+                    e.y += TILESIZE;
+                if(Emov==4 && GetScreenWidth()-TILESIZE > e.x && !rightFilled)
+                    e.x +=TILESIZE;
 
-                map[e.x/50][e.y/50] = false;
-
+                //map[e.x/TILESIZE][e.y/TILESIZE] = false;
                 e.moveTime = 0.0f;
             }
             break;
@@ -151,15 +177,15 @@ void moveEnemy(Enemy &e, std::vector<std::vector<bool>> &map){
                 //Enemy movement
                 int Emov = distribute(generator);
                 if(Emov==1 && e.y > 0)
-                            e.y -= 50;
+                            e.y -= TILESIZE;
                 if(Emov==2 && e.x > 0)
-                    e.x -= 50;
-                if(Emov==3 && GetScreenHeight()-50 > e.y)
-                    e.y += 50;
-                if(Emov==4 && GetScreenWidth()-50 > e.x)
-                    e.x +=50;
+                    e.x -= TILESIZE;
+                if(Emov==3 && GetScreenHeight()-TILESIZE > e.y)
+                    e.y += TILESIZE;
+                if(Emov==4 && GetScreenWidth()-TILESIZE > e.x)
+                    e.x +=TILESIZE;
 
-                map[e.x/50][e.y/50] = false;
+                //map[e.x/TILESIZE][e.y/TILESIZE] = false;
 
                 e.moveTime = 0.0f;
             }
@@ -168,16 +194,16 @@ void moveEnemy(Enemy &e, std::vector<std::vector<bool>> &map){
             if(e.moveTime >= SCORPION_MOVE_INTERVAL){
                 //Enemy movement
                 int Emov = distribute(generator);
-                if(Emov==1 && e.y > 0)
-                    e.y -= 50;
+                if(Emov==1 && e.y > 0 )
+                    e.y -= TILESIZE;
                 if(Emov==2 && e.x > 0)
-                    e.x -= 50;
-                if(Emov==3 && GetScreenHeight()-50 > e.y)
-                    e.y += 50;
-                if(Emov==4 && GetScreenWidth()-50 > e.x)
-                    e.x +=50;
+                    e.x -= TILESIZE;
+                if(Emov==3 && GetScreenHeight()-TILESIZE > e.y)
+                    e.y += TILESIZE;
+                if(Emov==4 && GetScreenWidth()-TILESIZE > e.x)
+                    e.x +=TILESIZE;
 
-                map[e.x/50][e.y/50] = false;
+                //map[e.x/TILESIZE][e.y/TILESIZE] = false;
 
                 e.moveTime = 0.0f;
             }
@@ -186,16 +212,16 @@ void moveEnemy(Enemy &e, std::vector<std::vector<bool>> &map){
             if(e.moveTime >= RAT_MOVE_INTERVAL){
                 //Enemy movement
                 int Emov = distribute(generator);
-                if(Emov==1 && e.y > 0)
-                    e.y -= 50;
-                if(Emov==2 && e.x > 0)
-                    e.x -= 50;
-                if(Emov==3 && GetScreenHeight()-50 > e.y)
-                    e.y += 50;
-                if(Emov==4 && GetScreenWidth()-50 > e.x)
-                    e.x +=50;
+                if(Emov==1 && e.y > 0 && !topFilled)
+                    e.y -= TILESIZE;
+                if(Emov==2 && e.x > 0 && !leftFilled)
+                    e.x -= TILESIZE;
+                if(Emov==3 && GetScreenHeight()-TILESIZE > e.y && !botFilled)
+                    e.y += TILESIZE;
+                if(Emov==4 && GetScreenWidth()-TILESIZE > e.x && !rightFilled)
+                    e.x +=TILESIZE;
 
-                map[e.x/50][e.y/50] = false;
+                //map[e.x/TILESIZE][e.y/TILESIZE] = false;
                 e.moveTime = 0.0f;
             }
             break;

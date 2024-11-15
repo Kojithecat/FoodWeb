@@ -1,11 +1,14 @@
 #include "raylib.h"
 #include <queue>
 
+#define TILESIZE 50
+
 const float MOVE_INTERVAL = 0.2f;
 const float BAT_MOVE_INTERVAL = 3*MOVE_INTERVAL;
 const float SCORPION_MOVE_INTERVAL = 2*MOVE_INTERVAL;
 const float RAT_MOVE_INTERVAL = MOVE_INTERVAL;
 const float SNAKE_MOVE_INTERVAL = 5*MOVE_INTERVAL;
+
 
 
 typedef enum {
@@ -40,6 +43,20 @@ struct Enemy {
     ETYPE type;
 };
 
+struct Rock{
+    int x;
+    int y;
+    float moveTime;
+    Texture2D texture;
+
+};
+
+struct LevelGoal{
+    int x;
+    int y;
+    bool open;
+};
+
 struct Casilla{
     bool filled;
     //...
@@ -58,6 +75,7 @@ Player initPlayer(int x, int y);
 
 Enemy initEnemy(int x, int y, ETYPE type);
 
+LevelGoal initGoal(int x, int y, bool open);
 
 void checkPlayerMovement(Player &p);
 
