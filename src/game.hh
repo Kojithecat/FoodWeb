@@ -8,6 +8,7 @@ const float BAT_MOVE_INTERVAL = 3*MOVE_INTERVAL;
 const float SCORPION_MOVE_INTERVAL = 2*MOVE_INTERVAL;
 const float RAT_MOVE_INTERVAL = MOVE_INTERVAL;
 const float SNAKE_MOVE_INTERVAL = 5*MOVE_INTERVAL;
+const float ROCK_FALL_INTERVAL = MOVE_INTERVAL;
 
 
 
@@ -38,6 +39,7 @@ struct Player {
 struct Enemy {
     int x;
     int y;
+    bool dead;
     float moveTime;
     Texture2D texture;
     ETYPE type;
@@ -75,6 +77,8 @@ Player initPlayer(int x, int y);
 
 Enemy initEnemy(int x, int y, ETYPE type);
 
+Rock initRock(int x, int y);
+
 LevelGoal initGoal(int x, int y, bool open);
 
 void checkPlayerMovement(Player &p);
@@ -82,3 +86,5 @@ void checkPlayerMovement(Player &p);
 void movePlayer(Player &p, std::vector<std::vector<bool>> &map);
 
 void moveEnemy(Enemy &e, std::vector<std::vector<bool>> &map);
+
+void moveRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<bool>> &map);
