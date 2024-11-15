@@ -33,17 +33,20 @@ SCREEN runTestLevel(){
     Player p = initPlayer(0, 0);
     filledMap[0][0] = false;
 
-    Enemy e1 = initEnemy(13,6,RAT);
+    Enemy e1 = initEnemy(13,4,RAT);
+    filledMap[13][3] = false;
+    filledMap[13][4] = false;
     filledMap[13][5] = false;
-    filledMap[13][6] = false;
-    filledMap[13][7] = false;
 
     Enemy e2 = initEnemy(6, 6, BAT);
     filledMap[6][5] = false;
     filledMap[6][6] = false;
     filledMap[6][7] = false;
 
-    Rock r = initRock(6, 3);
+    Rock r1 = initRock(6, 3);
+    filledMap[6][3] = false;
+
+    Rock r2 = initRock(13, 1);
     filledMap[6][3] = false;
 
     LevelGoal w = initGoal(GetScreenWidth()/TILESIZE - 1, GetScreenHeight()/TILESIZE - 1, true);
@@ -57,13 +60,15 @@ SCREEN runTestLevel(){
         p.moveTime += GetFrameTime();
         e1.moveTime += GetFrameTime();
         e2.moveTime += GetFrameTime();
-        r.moveTime += GetFrameTime();
+        r1.moveTime += GetFrameTime();
+        r2.moveTime += GetFrameTime();
 
         checkPlayerMovement(p);
         movePlayer(p, filledMap);
         moveEnemy(e1, filledMap);
         moveEnemy(e2, filledMap);
-        moveRock(r, enemyVector, p, filledMap);
+        moveRock(r1, enemyVector, p, filledMap);
+        moveRock(r2, enemyVector, p, filledMap);
 
         BeginDrawing();
             ClearBackground(RAYWHITE);
@@ -76,12 +81,13 @@ SCREEN runTestLevel(){
             DrawRectangle(p.x*TILESIZE, p.y*TILESIZE, TILESIZE, TILESIZE, BLACK);
             if(!e1.dead) DrawRectangle(e1.x*TILESIZE, e1.y*TILESIZE, TILESIZE, TILESIZE, RED);
             if(!e2.dead) DrawRectangle(e2.x*TILESIZE, e2.y*TILESIZE, TILESIZE, TILESIZE, RED);
-            DrawRectangle(r.x*TILESIZE, r.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
+            DrawRectangle(r1.x*TILESIZE, r1.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
+            DrawRectangle(r2.x*TILESIZE, r2.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
 
         EndDrawing();
         //Check player's death'
-        if(r.x == e1.x && r.y == e1.y) e1.dead = true;
-        if(r.x == e2.x && r.y == e2.y) e2.dead = true;
+        if(r1.x == e1.x && r1.y == e1.y || r2.x == e1.x && r2.y == e1.y) e1.dead = true;
+        if(r1.x == e2.x && r1.y == e2.y || r2.x == e2.x && r2.y == e2.y) e2.dead = true;
         if(e1.x == p.x && e1.y == p.y && !e1.dead || e2.x == p.x && e2.y == p.y && !e2.dead) return MENUSCREEN;
         if(w.x == p.x && w.y == p.y) return LVL1;
     }
