@@ -31,7 +31,7 @@ SCREEN runTestLevel(){
     std::vector<std::vector<bool>> filledMap(GetScreenWidth()/50, std::vector<bool>(GetScreenHeight()/50,true));
     Player p = initPlayer(0, 0);
     Enemy e1 = initEnemy(650,300,RAT);
-    Enemy e2 = initEnemy(300, 450, BAT);
+    Enemy e2 = initEnemy(300, 300, BAT);
     Player w;
     w.x = GetScreenWidth()-50;
     w.y = GetScreenHeight()-50;
@@ -127,20 +127,77 @@ void movePlayer(Player &p, std::vector<std::vector<bool>> &map){
 
 void moveEnemy(Enemy &e, std::vector<std::vector<bool>> &map){
 
-    if(e.moveTime >= BAT_MOVE_INTERVAL){
-        //Enemy movement
-        int Emov = distribute(generator);
-        if(Emov==1 && e.y > 0)
-            e.y -= 50;
-        if(Emov==2 && e.x > 0)
-            e.x -= 50;
-        if(Emov==3 && GetScreenHeight()-50 > e.y)
-            e.y += 50;
-        if(Emov==4 && GetScreenWidth()-50 > e.x)
-            e.x +=50;
+    switch(e.type){
+        case BAT:
+            if(e.moveTime >= BAT_MOVE_INTERVAL){
+                //Enemy movement
+                int Emov = distribute(generator);
+                if(Emov==1 && e.y > 0)
+                    e.y -= 50;
+                if(Emov==2 && e.x > 0)
+                    e.x -= 50;
+                if(Emov==3 && GetScreenHeight()-50 > e.y)
+                    e.y += 50;
+                if(Emov==4 && GetScreenWidth()-50 > e.x)
+                    e.x +=50;
 
-        map[e.x/50][e.y/50] = false;
+                map[e.x/50][e.y/50] = false;
 
-        e.moveTime = 0.0f;
+                e.moveTime = 0.0f;
+            }
+            break;
+        case SNAKE:
+            if(e.moveTime >= SNAKE_MOVE_INTERVAL){
+                //Enemy movement
+                int Emov = distribute(generator);
+                if(Emov==1 && e.y > 0)
+                            e.y -= 50;
+                if(Emov==2 && e.x > 0)
+                    e.x -= 50;
+                if(Emov==3 && GetScreenHeight()-50 > e.y)
+                    e.y += 50;
+                if(Emov==4 && GetScreenWidth()-50 > e.x)
+                    e.x +=50;
+
+                map[e.x/50][e.y/50] = false;
+
+                e.moveTime = 0.0f;
+            }
+            break;
+        case SCORPION:
+            if(e.moveTime >= SCORPION_MOVE_INTERVAL){
+                //Enemy movement
+                int Emov = distribute(generator);
+                if(Emov==1 && e.y > 0)
+                    e.y -= 50;
+                if(Emov==2 && e.x > 0)
+                    e.x -= 50;
+                if(Emov==3 && GetScreenHeight()-50 > e.y)
+                    e.y += 50;
+                if(Emov==4 && GetScreenWidth()-50 > e.x)
+                    e.x +=50;
+
+                map[e.x/50][e.y/50] = false;
+
+                e.moveTime = 0.0f;
+            }
+            break;
+        case RAT:
+            if(e.moveTime >= RAT_MOVE_INTERVAL){
+                //Enemy movement
+                int Emov = distribute(generator);
+                if(Emov==1 && e.y > 0)
+                    e.y -= 50;
+                if(Emov==2 && e.x > 0)
+                    e.x -= 50;
+                if(Emov==3 && GetScreenHeight()-50 > e.y)
+                    e.y += 50;
+                if(Emov==4 && GetScreenWidth()-50 > e.x)
+                    e.x +=50;
+
+                map[e.x/50][e.y/50] = false;
+                e.moveTime = 0.0f;
+            }
+            break;
     }
 }
