@@ -64,19 +64,29 @@ SCREEN runTestLevel(){
 
     while(!IsKeyPressed(KEY_ESCAPE)){
 
-        p.moveTime += GetFrameTime();
-        for(Enemy e : enemyVector){
-            e.moveTime += GetFrameTime();
-            std::cout << e.moveTime << std::endl;
+
+        for(Enemy& e : enemyVector){
+            //std::cout << e.y << std::endl;
+            if(e.x == p.x && e.y == p.y && !e.dead) return MENUSCREEN;
+            for(Rock& r: rockVector){
+               if(r.x == e.x && r.y == e.y)  e.dead = true;
+            }
         }
-        for(Rock r : rockVector)
+        if(w.x == p.x && w.y == p.y) return LVL1;
+
+        p.moveTime += GetFrameTime();
+        for(Enemy& e : enemyVector){
+            e.moveTime += GetFrameTime();
+            //std::cout << e.moveTime << std::endl;
+        }
+        for(Rock& r : rockVector)
             r.moveTime += GetFrameTime();
 
         checkPlayerMovement(p);
         movePlayer(p, levelMap);
         moveEnemies(enemyVector, levelMap);
-        moveRock(r1, enemyVector, p, levelMap);
-        moveRock(r2, enemyVector, p, levelMap);
+        for(Rock& r : rockVector)
+            moveRock(r, enemyVector, p, levelMap);
 
         BeginDrawing();
             ClearBackground(RAYWHITE);
@@ -87,18 +97,13 @@ SCREEN runTestLevel(){
                 }
             DrawRectangle(w.x*TILESIZE, w.y*TILESIZE, TILESIZE, TILESIZE, GREEN);
             DrawRectangle(p.x*TILESIZE, p.y*TILESIZE, TILESIZE, TILESIZE, BLACK);
-            for(Enemy e : enemyVector)
+            for(Enemy& e : enemyVector)
                 if(!e.dead)
                     DrawRectangle(e.x*TILESIZE, e.y*TILESIZE, TILESIZE, TILESIZE, RED);
-            for(Rock r : rockVector)
+            for(Rock& r : rockVector)
                 DrawRectangle(r.x*TILESIZE, r.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
 
         EndDrawing();
-        //Check player's death'
-        if(r1.x == e1.x && r1.y == e1.y || r2.x == e1.x && r2.y == e1.y) e1.dead = true;
-        if(r1.x == e2.x && r1.y == e2.y || r2.x == e2.x && r2.y == e2.y) e2.dead = true;
-        if(e1.x == p.x && e1.y == p.y && !e1.dead || e2.x == p.x && e2.y == p.y && !e2.dead) return MENUSCREEN;
-        if(w.x == p.x && w.y == p.y) return LVL1;
 
         //std::cout << e1.x << " " << e1.y << std::endl;
     }
@@ -121,9 +126,9 @@ int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w,
     }
     levelMap[p.x][p.y].isPlayer = true;
     levelMap[w.x][w.y].isGoal = true;
-    for(Enemy e : enemyVector)
+    for(Enemy& e : enemyVector)
     levelMap[e.x][e.y].isEnemy = true;
-    for(Rock r : rockVector)
+    for(Rock& r : rockVector)
     levelMap[r.x][r.y].isRock = true;
 
     return 0;
@@ -209,7 +214,7 @@ void movePlayer(Player &p, std::vector<std::vector<Casilla>> &map){
 }
 
 void moveEnemies(std::vector<Enemy> &enemyVector, std::vector<std::vector<Casilla>> &map){
-    for(Enemy e : enemyVector){
+    for(Enemy& e : enemyVector){
         int prex = e.x;
         int prey = e.y;
         moveEnemy(e, map);
@@ -233,9 +238,9 @@ void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map){
 
     switch(e.type){
         case BAT:
-            std::cout << "Hii" << std::endl;
+            //std::cout << "Hii" << std::endl;
             if(e.moveTime >= BAT_MOVE_INTERVAL){
-                std::cout << "hiii" << std::endl;
+                //std::cout << "hiii" << std::endl;
                 //Enemy movement
                 int Emov = distribute(generator);
                 if(Emov==1 && e.y > 0 && !topFilled)
@@ -253,7 +258,7 @@ void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map){
         case SNAKE:
             if(e.moveTime >= SNAKE_MOVE_INTERVAL){
                 //Enemy movement
-                std::cout << "hiii" << std::endl;
+                //std::cout << "hiii" << std::endl;
                 int Emov = distribute(generator);
                 if(Emov==1 && e.y > 0)
                     e.y -= 1;
@@ -270,7 +275,7 @@ void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map){
         case SCORPION:
             if(e.moveTime >= SCORPION_MOVE_INTERVAL){
                 //Enemy movement
-                std::cout << "hiii" << std::endl;
+                //std::cout << "hiii" << std::endl;
                 int Emov = distribute(generator);
                 if(Emov==1 && e.y > 0 )
                     e.y -= 1;
@@ -289,7 +294,7 @@ void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map){
         case RAT:
             if(e.moveTime >= RAT_MOVE_INTERVAL){
                 //Enemy movement
-                std::cout << "hiii" << std::endl;
+                //std::cout << "hiii" << std::endl;
                 int Emov = distribute(generator);
                 if(Emov==1 && e.y > 0 && !topFilled)
                     e.y -= 1;
@@ -309,7 +314,11 @@ void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map){
 
 void moveRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map){
 
-    if(!map[r.x][r.y+1].isFill && !(r.x == p.x && r.y + 1 == p.y) && r.moveTime >= ROCK_FALL_INTERVAL){
+    if(r.y +1 < map[0].size() //Rock would not fall outbounds
+        && !map[r.x][r.y+1].isFill //The bottom tile is empty
+        && !(r.x == p.x && r.y + 1 == p.y) //No player is below the rock
+        && r.moveTime >= ROCK_FALL_INTERVAL){
+        std::cout << r.y << " " << r.moveTime << std::endl;
         r.moveTime = 0;
         map[r.x][r.y].isRock = false;
         r.y += 1;
