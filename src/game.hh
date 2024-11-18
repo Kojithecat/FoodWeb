@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include <queue>
+#include <set>
 
 #define TILESIZE 50
 
@@ -60,7 +61,12 @@ struct LevelGoal{
 };
 
 struct Casilla{
-    bool filled;
+    bool isFill;
+    bool isEnemy;
+    bool isPlayer;
+    bool isRock;
+    bool isGoal;
+
     //...
 };
 
@@ -73,6 +79,9 @@ SCREEN showMenuScreen();
 
 SCREEN runTestLevel();
 
+int fillMap(std::vector<std::vector<Casilla>> &levelMap, Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::set<std::pair<int,int>> sandlessSet);
+
+
 Player initPlayer(int x, int y);
 
 Enemy initEnemy(int x, int y, ETYPE type);
@@ -83,8 +92,10 @@ LevelGoal initGoal(int x, int y, bool open);
 
 void checkPlayerMovement(Player &p);
 
-void movePlayer(Player &p, std::vector<std::vector<bool>> &map);
+void movePlayer(Player &p, std::vector<std::vector<Casilla>> &map);
 
-void moveEnemy(Enemy &e, std::vector<std::vector<bool>> &map);
+void moveEnemies(std::vector<Enemy> &enemyVector, std::vector<std::vector<Casilla>> &map);
 
-void moveRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<bool>> &map);
+void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map);
+
+void moveRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
