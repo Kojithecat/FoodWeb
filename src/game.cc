@@ -10,11 +10,16 @@
 using u32 = uint_least32_t;
 using engine = std::mt19937;
 
-
 std::random_device os_seed;
 const u32 seed = os_seed();
 engine generator(seed);
 std::uniform_int_distribution<u32> distribute(1,4);
+
+int width = 30;
+int height = 30;
+
+const int SCREEN_TILES_X = 15;
+const int SCREEN_TILES_Y = 10;
 
 SCREEN showMenuScreen(){
     BeginDrawing();
@@ -29,7 +34,7 @@ SCREEN showMenuScreen(){
 }
 
 SCREEN runTestLevel(){
-    std::vector<std::vector<Casilla>> levelMap(GetScreenWidth()/TILESIZE, std::vector<Casilla>(GetScreenHeight()/TILESIZE));
+    std::vector<std::vector<Casilla>> levelMap(width, std::vector<Casilla>(height));
 
     Player p = initPlayer(0, 0);
 
@@ -39,7 +44,7 @@ SCREEN runTestLevel(){
     Rock r1 = initRock(6, 3);
     Rock r2 = initRock(13, 1);
 
-    LevelGoal w = initGoal(GetScreenWidth()/TILESIZE - 1, GetScreenHeight()/TILESIZE - 1, true);
+    LevelGoal w = initGoal(width - 1, height - 1, true);
     //Uniform random umber generator from 1 to 4
     std::vector<Enemy> enemyVector;
     enemyVector.push_back(e1);
@@ -151,6 +156,21 @@ Enemy initEnemy(int x, int y, ETYPE type){
     e.dead = false;
     e.type = type;
     e.moveTime = 0;
+    //define move interval
+    switch(type){
+        case BAT:
+            e.intervalMove = BAT_MOVE_INTERVAL;
+            break;
+        case RAT:
+            e.intervalMove = RAT_MOVE_INTERVAL;
+            break;
+        case SNAKE:
+            e.intervalMove = SNAKE_MOVE_INTERVAL;
+            break;
+        case SCORPION:
+            e.intervalMove = SCORPION_MOVE_INTERVAL;
+            break;
+    }
     //switch(type) //set texture according to the enemy type
     return e;
 }
@@ -198,9 +218,9 @@ void movePlayer(Player &p, std::vector<std::vector<Casilla>> &map){
                 p.y -= 1;
             if(Pmov == 'a' && p.x > 0)
                 p.x -= 1;
-            if(Pmov == 's' && GetScreenHeight()/TILESIZE - 1 > p.y)
+            if(Pmov == 's' && height - 1 > p.y)
                 p.y += 1;
-            if(Pmov == 'd' && GetScreenWidth()/TILESIZE - 1 > p.x)
+            if(Pmov == 'd' && width - 1 > p.x)
                 p.x +=1;
             map[p.x][p.y].isFill = false;
         }
@@ -227,88 +247,47 @@ void moveEnemies(std::vector<Enemy> &enemyVector, std::vector<std::vector<Casill
 
 void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map){
 
-    int width = GetScreenWidth()/TILESIZE;
-    int height = GetScreenHeight();
-
     bool leftFilled = e.x > 0 && map[e.x-1][e.y].isFill;
     bool rightFilled = e.x < width - 1 && map[e.x+1][e.y].isFill;
     bool topFilled = e.y > 0 && map[e.x][e.y-1].isFill;
     bool botFilled = e.y < height - 1 && map[e.x][e.y+1].isFill;
     //std::cout << leftFilled << rightFilled << topFilled << botFilled << std::endl;
 
-    switch(e.type){
-        case BAT:
+    std::vector<std::pair<int,int>> allowedMovements;
+    if(e.y > 0 && !topFilled)
+        allowedMovements.push_back(std::make_pair(e.x, e.y - 1));
+    if(e.x > 0 && !leftFilled)
+        allowedMovements.push_back(std::make_pair(e.x - 1, e.y));
+    if(height - 1 > e.y && !botFilled)
+        allowedMovements.push_back(std::make_pair(e.x, e.y + 1));
+    if(width - 1 > e.x && !rightFilled)
+        allowedMovements.push_back(std::make_pair(e.x + 1, e.y));
+
             //std::cout << "Hii" << std::endl;
-            if(e.moveTime >= BAT_MOVE_INTERVAL){
-                //std::cout << "hiii" << std::endl;
-                //Enemy movement
-                int Emov = distribute(generator);
-                if(Emov==1 && e.y > 0 && !topFilled)
-                    e.y -= 1;
-                if(Emov==2 && e.x > 0 && !leftFilled)
-                    e.x -= 1;
-                if(Emov==3 && height - 1 > e.y && !botFilled)
-                    e.y += 1;
-                if(Emov==4 && width- 1 > e.x && !rightFilled)
-                    e.x += 1;
-                //map[e.x/TILESIZE][e.y/TILESIZE] = false;
-                e.moveTime = 0.0f;
+    if(e.moveTime >= e.intervalMove){
+        //std::cout << "hiii" << std::endl;
+        if(allowedMovements.size()){
+            std::uniform_int_distribution<u32> randomMove(0, allowedMovements.size() -1);
+            auto Emov = allowedMovements[randomMove(generator)];
+            map[e.x][e.y].isEnemy = false;
+            e.x = Emov.first;
+            e.y = Emov.second;
+            map[e.x][e.y].isEnemy = true;
             }
-            break;
-        case SNAKE:
-            if(e.moveTime >= SNAKE_MOVE_INTERVAL){
-                //Enemy movement
-                //std::cout << "hiii" << std::endl;
-                int Emov = distribute(generator);
-                if(Emov==1 && e.y > 0)
-                    e.y -= 1;
-                if(Emov==2 && e.x > 0)
-                    e.x -= 1;
-                if(Emov==3 && height - 1 > e.y)
-                    e.y += 1;
-                if(Emov==4 && width - 1 > e.x)
-                    e.x +=1;
-                //map[e.x/TILESIZE][e.y/TILESIZE] = false;
-                e.moveTime = 0.0f;
-            }
-            break;
-        case SCORPION:
-            if(e.moveTime >= SCORPION_MOVE_INTERVAL){
-                //Enemy movement
-                //std::cout << "hiii" << std::endl;
-                int Emov = distribute(generator);
-                if(Emov==1 && e.y > 0 )
-                    e.y -= 1;
-                if(Emov==2 && e.x > 0)
-                    e.x -= 1;
-                if(Emov==3 && height - 1 > e.y)
-                    e.y += 1;
-                if(Emov==4 && width - 1 > e.x)
-                    e.x += 1;
-
-                //map[e.x/TILESIZE][e.y/TILESIZE] = false;
-
-                e.moveTime = 0.0f;
-            }
-            break;
-        case RAT:
-            if(e.moveTime >= RAT_MOVE_INTERVAL){
-                //Enemy movement
-                //std::cout << "hiii" << std::endl;
-                int Emov = distribute(generator);
-                if(Emov==1 && e.y > 0 && !topFilled)
-                    e.y -= 1;
-                if(Emov==2 && e.x > 0 && !leftFilled)
-                    e.x -= 1;
-                if(Emov==3 && height -1 > e.y && !botFilled)
-                    e.y += 1;
-                if(Emov==4 && width -1 > e.x && !rightFilled)
-                    e.x +=1;
-
-                //map[e.x/TILESIZE][e.y/TILESIZE] = false;
-                e.moveTime = 0.0f;
-            }
-            break;
+        //Enemy movement
+        /*
+        int Emov = distribute(generator);
+        if(Emov==1 && e.y > 0 && !topFilled)
+            e.y -= 1;
+        if(Emov==2 && e.x > 0 && !leftFilled)
+            e.x -= 1;
+        if(Emov==3 && height - 1 > e.y && !botFilled)
+            e.y += 1;
+        if(Emov==4 && width- 1 > e.x && !rightFilled)
+            e.x += 1;
+            */
+        //map[e.x/TILESIZE][e.y/TILESIZE] = false;
+        e.moveTime = 0.0f;
     }
 }
 

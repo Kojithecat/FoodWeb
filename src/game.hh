@@ -44,6 +44,7 @@ struct Enemy {
     float moveTime;
     Texture2D texture;
     ETYPE type;
+    float intervalMove;
 };
 
 struct Rock{
@@ -68,11 +69,6 @@ struct Casilla{
     bool isGoal;
 
     //...
-};
-
-struct Coord{
-    int x;
-    int y;
 };
 
 SCREEN showMenuScreen();
