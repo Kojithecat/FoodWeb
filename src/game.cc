@@ -19,8 +19,8 @@ std::uniform_int_distribution<u32> distribute(1,4);
 int width = 30;
 int height = 30;
 
-const int SCREEN_TILES_X = 15;
-const int SCREEN_TILES_Y = 10;
+const int SCREEN_TILES_X = 20;
+const int SCREEN_TILES_Y = 15;
 
 SCREEN showMenuScreen(){
     BeginDrawing();
@@ -95,10 +95,10 @@ SCREEN runTestLevel(){
             r.moveTime += GetFrameTime();
 
         checkPlayerMovement(p);
-        movePlayer(p, levelMap);
+        movePlayer(p, rockVector, levelMap);
         moveEnemies(enemyVector, levelMap);
         for(Rock& r : rockVector)
-            moveRock(r, enemyVector, p, levelMap);
+            fallRock(r, enemyVector, p, levelMap);
 
         camera.target = {(float) p.x*TILESIZE - 5*TILESIZE,(float) p.y*TILESIZE - 5*TILESIZE};
 
@@ -195,6 +195,15 @@ Rock initRock(int x, int y){
 
 }
 
+Bomb initBomb(int x, int y){
+    Bomb b;
+    b.x = x;
+    b.y = y;
+    b.moveTime = 0.0f;
+
+    return b; //Can I simplify the bomb and rock code into one?
+}
+
 LevelGoal initGoal(int x, int y, bool open){
     LevelGoal g;
     g.x = x;
@@ -216,14 +225,15 @@ void checkPlayerMovement(Player &p){
         p.playerMoves.push('d');//p.x +=TILESIZE;
 }
 
-void movePlayer(Player &p, std::vector<std::vector<Casilla>> &map){
+void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<std::vector<Casilla>> &map){
 
     if(p.moveTime>=MOVE_INTERVAL){
         //Player movement
         int prex = p.x;
         int prey = p.y;
+        char Pmov = ' ';
         if(!p.playerMoves.empty()){
-            char Pmov = p.playerMoves.back();
+            Pmov = p.playerMoves.back();
             if(Pmov == 'w' && p.y > 0)
                 p.y -= 1;
             if(Pmov == 'a' && p.x > 0)
@@ -240,6 +250,16 @@ void movePlayer(Player &p, std::vector<std::vector<Casilla>> &map){
         //Update map
         map[prex][prey].isPlayer = false;
         map[p.x][p.y].isPlayer = true;
+        //Move rocks in front of the player
+        for(Rock& r : rockVector){
+            if(p.x == r.x && p.y == r.y && Pmov == 'a'){
+                std::cout << "hii" << std::endl;
+                moveRock(r, map, -1);
+            }
+            else if(p.x == r.x && p.y == r.y && Pmov == 'd'){
+                moveRock(r, map, 1);
+            }
+        }
     }
 }
 
@@ -301,7 +321,7 @@ void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map){
     }
 }
 
-void moveRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map){
+void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map){
 
     if(r.y +1 < map[0].size() //Rock would not fall outbounds
         && !map[r.x][r.y+1].isFill //The bottom tile is empty
@@ -313,4 +333,14 @@ void moveRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<s
         r.y += 1;
         map[r.x][r.y].isRock = true;
     }
+}
+
+
+void moveRock(Rock &r, std::vector<std::vector<Casilla>> &map, int deltax){
+    map[r.x][r.y].isRock = false;
+    r.x += deltax;
+    map[r.x][r.y].isRock = true;
+    map[r.x][r.y].isFill = false;
+
+
 }

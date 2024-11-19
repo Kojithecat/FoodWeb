@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include <queue>
 #include <set>
+#include <vector>
 
 #define TILESIZE 50
 
@@ -55,6 +56,14 @@ struct Rock{
 
 };
 
+struct Bomb{
+    int x;
+    int y;
+    float moveTime;
+    Texture2D texture;
+
+};
+
 struct LevelGoal{
     int x;
     int y;
@@ -67,6 +76,7 @@ struct Casilla{
     bool isPlayer;
     bool isRock;
     bool isGoal;
+    bool isBomb;
 
     //...
 };
@@ -88,10 +98,12 @@ LevelGoal initGoal(int x, int y, bool open);
 
 void checkPlayerMovement(Player &p);
 
-void movePlayer(Player &p, std::vector<std::vector<Casilla>> &map);
+void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<std::vector<Casilla>> &map);
 
 void moveEnemies(std::vector<Enemy> &enemyVector, std::vector<std::vector<Casilla>> &map);
 
 void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map);
 
-void moveRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
+void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
+
+void moveRock(Rock &r, std::vector<std::vector<Casilla>> &map, int deltax);
