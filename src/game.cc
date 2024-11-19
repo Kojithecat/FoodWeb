@@ -16,8 +16,8 @@ const u32 seed = os_seed();
 engine generator(seed);
 std::uniform_int_distribution<u32> distribute(1,4);
 
-int width = 30;
-int height = 30;
+int width = 15;
+int height = 10;
 
 const int SCREEN_TILES_X = 20;
 const int SCREEN_TILES_Y = 15;
@@ -42,17 +42,23 @@ SCREEN runTestLevel(){
     Enemy e1 = initEnemy(13,4,RAT);
     Enemy e2 = initEnemy(6, 6, BAT);
 
-    Rock r1 = initRock(6, 3);
+    //Rock r1 = initRock(6, 3);
     Rock r2 = initRock(13, 1);
+
+    Bomb b = initBomb(6,3);
 
     LevelGoal w = initGoal(width - 1, height - 1, true);
     //Uniform random umber generator from 1 to 4
     std::vector<Enemy> enemyVector;
     enemyVector.push_back(e1);
     enemyVector.push_back(e2);
+
     std::vector<Rock> rockVector;
-    rockVector.push_back(r1);
+    //rockVector.push_back(r1);
     rockVector.push_back(r2);
+
+    std::vector<Bomb> bombVector;
+    bombVector.push_back(b);
 
     std::set<std::pair<int,int>> sandlessCasillas;
 
@@ -76,15 +82,14 @@ SCREEN runTestLevel(){
 
     while(!IsKeyPressed(KEY_ESCAPE)){
 
-
         for(Enemy& e : enemyVector){
             //std::cout << e.y << std::endl;
-            if(e.x == p.x && e.y == p.y && !e.dead) return MENUSCREEN;
+            if(collision(e,p) && !e.dead) return MENUSCREEN;
             for(Rock& r: rockVector){
-               if(r.x == e.x && r.y == e.y)  e.dead = true;
+               if(collision(e,r))  e.dead = true;
             }
         }
-        if(w.x == p.x && w.y == p.y) return LVL1;
+        if(collision(w,p)) return LVL1;
 
         p.moveTime += GetFrameTime();
         for(Enemy& e : enemyVector){
@@ -93,12 +98,17 @@ SCREEN runTestLevel(){
         }
         for(Rock& r : rockVector)
             r.moveTime += GetFrameTime();
+        for(Bomb& b : bombVector)
+            b.moveTime += GetFrameTime();
 
         checkPlayerMovement(p);
-        movePlayer(p, rockVector, levelMap);
-        moveEnemies(enemyVector, levelMap);
         for(Rock& r : rockVector)
             fallRock(r, enemyVector, p, levelMap);
+        for(Bomb& b : bombVector){
+            fallBomb(b, enemyVector, p, levelMap);
+        }
+        movePlayer(p, rockVector, bombVector, levelMap);
+        moveEnemies(enemyVector, levelMap);
 
         camera.target = {(float) p.x*TILESIZE - 5*TILESIZE,(float) p.y*TILESIZE - 5*TILESIZE};
 
@@ -117,6 +127,8 @@ SCREEN runTestLevel(){
                     DrawRectangle(e.x*TILESIZE, e.y*TILESIZE, TILESIZE, TILESIZE, RED);
             for(Rock& r : rockVector)
                 DrawRectangle(r.x*TILESIZE, r.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
+            for(Bomb& b : bombVector)
+                DrawRectangle(b.x*TILESIZE, b.y*TILESIZE, TILESIZE, TILESIZE, PURPLE);
         EndMode2D();
         EndDrawing();
 
@@ -190,9 +202,9 @@ Rock initRock(int x, int y){
     r.x = x;
     r.y = y;
     r.moveTime = 0.0f;
+    r.falling = false;
 
     return r;
-
 }
 
 Bomb initBomb(int x, int y){
@@ -200,6 +212,7 @@ Bomb initBomb(int x, int y){
     b.x = x;
     b.y = y;
     b.moveTime = 0.0f;
+    b.falling = false;
 
     return b; //Can I simplify the bomb and rock code into one?
 }
@@ -225,7 +238,7 @@ void checkPlayerMovement(Player &p){
         p.playerMoves.push('d');//p.x +=TILESIZE;
 }
 
-void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<std::vector<Casilla>> &map){
+void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<std::vector<Casilla>> &map){
 
     if(p.moveTime>=MOVE_INTERVAL){
         //Player movement
@@ -252,12 +265,33 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<std::vecto
         map[p.x][p.y].isPlayer = true;
         //Move rocks in front of the player
         for(Rock& r : rockVector){
-            if(p.x == r.x && p.y == r.y && Pmov == 'a'){
+            if(collision(r, p) && Pmov == 'a'){
                 std::cout << "hii" << std::endl;
-                moveRock(r, map, -1);
+                moveObject(r, map, -1, 0);
             }
-            else if(p.x == r.x && p.y == r.y && Pmov == 'd'){
-                moveRock(r, map, 1);
+            else if(collision(r, p) && Pmov == 'd'){
+                moveObject(r, map, 1, 0);
+            }
+            else if(collision(r, p) && Pmov == 'w'){
+                moveObject(r, map, 0, -1);
+            }
+            else if(collision(r, p) && Pmov == 's'){
+                moveObject(r, map, 0, 1);
+            }
+        }
+        for(Bomb& b : bombVector){
+            if(collision(b, p) && Pmov == 'a'){
+                std::cout << "hii" << std::endl;
+                moveObject(b, map, -1, 0);
+            }
+            else if(collision(b, p) && Pmov == 'd'){
+                moveObject(b, map, 1, 0);
+            }
+            else if(collision(b, p) && Pmov == 'w'){
+                moveObject(b, map, 0, -1);
+            }
+            else if(collision(b, p) && Pmov == 's'){
+                moveObject(b, map, 0, 1);
             }
         }
     }
@@ -332,15 +366,66 @@ void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<s
         map[r.x][r.y].isRock = false;
         r.y += 1;
         map[r.x][r.y].isRock = true;
+        r.falling = true;
     }
+    else r.falling = false;
 }
 
 
-void moveRock(Rock &r, std::vector<std::vector<Casilla>> &map, int deltax){
-    map[r.x][r.y].isRock = false;
-    r.x += deltax;
-    map[r.x][r.y].isRock = true;
-    map[r.x][r.y].isFill = false;
+int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map){
 
+    if(b.y +1 < map[0].size() //Rock would not fall outbounds
+        && !map[b.x][b.y+1].isFill //The bottom tile is empty
+        && !(b.x == p.x && b.y + 1 == p.y) //No player is below the rock
+        && b.moveTime >= ROCK_FALL_INTERVAL){
+        //std::cout << b.y << " " << r.moveTime << std::endl;
+        b.moveTime = 0;
+        map[b.x][b.y].isBomb = false;
+        b.y += 1;
+        map[b.x][b.y].isBomb = true;
+        b.falling = true;
+        return 0;
+    }
+    else if(b.falling &&  b.moveTime >= ROCK_FALL_INTERVAL){
+        b.falling = false;
 
+        bool leftFilled = b.x > 0 && map[b.x-1][b.y].isFill;
+        bool rightFilled = b.x < width - 1 && map[b.x+1][b.y].isFill;
+        bool topFilled = b.y > 0 && map[b.x][b.y-1].isFill;
+        bool botFilled = b.y < height - 1 && map[b.x][b.y+1].isFill;
+
+        //TODO check bomb explosions in margins
+        map[b.x+1][b.y].isFill = false;
+        map[b.x+1][b.y+1].isFill = false;
+        map[b.x+1][b.y-1].isFill = false;
+        map[b.x-1][b.y].isFill = false;
+        map[b.x-1][b.y+1].isFill = false;
+        map[b.x-1][b.y-1].isFill = false;
+        map[b.x][b.y+1].isFill = false;
+        map[b.x][b.y-1].isFill = false;
+        return 1; //Self destroy
+    }
+    return 0;
+}
+
+template<class T>
+void moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay){
+    if(typeid(o).name() == "Rock"){
+        map[o.x][o.y].isRock = false;
+        map[o.x + deltax][o.y + deltay].isRock = true;
+        map[o.x][o.y].isFill = false;
+    }
+    else if(typeid(o).name() == "Bomb"){
+        map[o.x][o.y].isBomb = false;
+        map[o.x + deltax][o.y + deltay].isBomb = true;
+        map[o.x][o.y].isFill = false;
+    }
+    o.x += deltax;
+    o.y += deltay;
+
+}
+
+template <class T, class U>
+bool collision(const T& e1, const U& e2){
+    return e1.x == e2.x && e1.y == e2.y;
 }

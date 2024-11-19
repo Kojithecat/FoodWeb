@@ -53,7 +53,7 @@ struct Rock{
     int y;
     float moveTime;
     Texture2D texture;
-
+    bool falling;
 };
 
 struct Bomb{
@@ -61,6 +61,7 @@ struct Bomb{
     int y;
     float moveTime;
     Texture2D texture;
+    bool falling;
 
 };
 
@@ -94,11 +95,13 @@ Enemy initEnemy(int x, int y, ETYPE type);
 
 Rock initRock(int x, int y);
 
+Bomb initBomb(int x, int y);
+
 LevelGoal initGoal(int x, int y, bool open);
 
 void checkPlayerMovement(Player &p);
 
-void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<std::vector<Casilla>> &map);
+void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<std::vector<Casilla>> &map);
 
 void moveEnemies(std::vector<Enemy> &enemyVector, std::vector<std::vector<Casilla>> &map);
 
@@ -106,4 +109,10 @@ void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map);
 
 void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
 
-void moveRock(Rock &r, std::vector<std::vector<Casilla>> &map, int deltax);
+int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
+
+template<class T>
+void moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay);
+
+template <class T, class U>
+bool collision(const T& e1, const U& e2);
