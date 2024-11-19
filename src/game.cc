@@ -1,5 +1,6 @@
 #include "game.hh"
 #include "raylib.h"
+#include <algorithm>
 #include <iostream>
 #include <cstdint>
 #include <utility>
@@ -67,6 +68,12 @@ SCREEN runTestLevel(){
 
     fillMap(levelMap, p, w, enemyVector, rockVector, sandlessCasillas);
 
+    Camera2D camera;
+    camera.offset =  {(float) p.x,(float) p.y};
+    camera.target = {(float) p.x,(float) p.y};
+    camera.rotation = 0.0f;
+    camera.zoom = 1.0f;
+
     while(!IsKeyPressed(KEY_ESCAPE)){
 
 
@@ -93,7 +100,10 @@ SCREEN runTestLevel(){
         for(Rock& r : rockVector)
             moveRock(r, enemyVector, p, levelMap);
 
+        camera.target = {(float) p.x*TILESIZE - 5*TILESIZE,(float) p.y*TILESIZE - 5*TILESIZE};
+
         BeginDrawing();
+        BeginMode2D(camera);
             ClearBackground(RAYWHITE);
             for(int i = 0; i < levelMap.size(); i++){
                 for(int j = 0; j < levelMap[i].size(); j++){
@@ -107,7 +117,7 @@ SCREEN runTestLevel(){
                     DrawRectangle(e.x*TILESIZE, e.y*TILESIZE, TILESIZE, TILESIZE, RED);
             for(Rock& r : rockVector)
                 DrawRectangle(r.x*TILESIZE, r.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
-
+        EndMode2D();
         EndDrawing();
 
         //std::cout << e1.x << " " << e1.y << std::endl;
