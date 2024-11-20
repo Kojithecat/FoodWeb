@@ -22,6 +22,7 @@ int height = 10;
 const int SCREEN_TILES_X = 20;
 const int SCREEN_TILES_Y = 15;
 
+
 SCREEN showMenuScreen(){
     BeginDrawing();
 
@@ -37,17 +38,17 @@ SCREEN showMenuScreen(){
 SCREEN runTestLevel(){
     std::vector<std::vector<Casilla>> levelMap(width, std::vector<Casilla>(height));
 
-    Player p = initPlayer(0, 0);
+    Player p = Player(1, 1);
 
-    Enemy e1 = initEnemy(13,4,RAT);
-    Enemy e2 = initEnemy(6, 6, BAT);
+    Enemy e1 = Enemy(13,4,RAT);
+    Enemy e2 = Enemy(6, 6, BAT);
 
     //Rock r1 = initRock(6, 3);
-    Rock r2 = initRock(13, 1);
+    Rock r2 = Rock(13, 1);
 
-    Bomb b = initBomb(6,3);
+    Bomb b = Bomb(6,3);
 
-    LevelGoal w = initGoal(width - 1, height - 1, true);
+    LevelGoal w = LevelGoal(width - 2, height - 2, true);
     //Uniform random umber generator from 1 to 4
     std::vector<Enemy> enemyVector;
     enemyVector.push_back(e1);
@@ -88,6 +89,9 @@ SCREEN runTestLevel(){
             for(Rock& r: rockVector){
                if(collision(e,r))  e.dead = true;
             }
+            for(Bomb& b: bombVector){
+                if(collision(e,b))  e.dead = true;
+            }
         }
         if(collision(w,p)) return LVL1;
 
@@ -104,8 +108,12 @@ SCREEN runTestLevel(){
         checkPlayerMovement(p);
         for(Rock& r : rockVector)
             fallRock(r, enemyVector, p, levelMap);
-        for(Bomb& b : bombVector){
-            fallBomb(b, enemyVector, p, levelMap);
+        for (auto it = bombVector.begin(); it != bombVector.end(); ) {
+            if (fallBomb(*it, enemyVector, p, levelMap)) {
+                it = bombVector.erase(it);
+            } else {
+                ++it;
+            }
         }
         movePlayer(p, rockVector, bombVector, levelMap);
         moveEnemies(enemyVector, levelMap);
@@ -117,11 +125,13 @@ SCREEN runTestLevel(){
             ClearBackground(RAYWHITE);
             for(int i = 0; i < levelMap.size(); i++){
                 for(int j = 0; j < levelMap[i].size(); j++){
-                    if(levelMap[i][j].isFill) DrawRectangle(i*TILESIZE, j*TILESIZE, TILESIZE, TILESIZE, ORANGE);
+                    if(levelMap[i][j].isBedrock) DrawRectangle(i*TILESIZE, j*TILESIZE, TILESIZE, TILESIZE, BLACK);
+                    else if(levelMap[i][j].isFill) DrawRectangle(i*TILESIZE, j*TILESIZE, TILESIZE, TILESIZE, ORANGE);
+
                     }
                 }
             DrawRectangle(w.x*TILESIZE, w.y*TILESIZE, TILESIZE, TILESIZE, GREEN);
-            DrawRectangle(p.x*TILESIZE, p.y*TILESIZE, TILESIZE, TILESIZE, BLACK);
+            DrawRectangle(p.x*TILESIZE, p.y*TILESIZE, TILESIZE, TILESIZE, YELLOW);
             for(Enemy& e : enemyVector)
                 if(!e.dead)
                     DrawRectangle(e.x*TILESIZE, e.y*TILESIZE, TILESIZE, TILESIZE, RED);
@@ -141,14 +151,14 @@ int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w,
 
     for(int i = 0; i < levelMap.size(); i++) {
         for(int j = 0; j <levelMap[i].size(); j++){
-            if(sandlessSet.find(std::make_pair(i,j)) != sandlessSet.end()){
+            if(i == 0 || i == width - 1 || j == 0 || j == height - 1)
+                levelMap[i][j].isBedrock = true;
+            else if(sandlessSet.find(std::make_pair(i,j)) != sandlessSet.end()){
                 levelMap[i][j].isFill = false;
+
             }
             else levelMap[i][j].isFill = true;
-            levelMap[i][j].isEnemy = false;
-            levelMap[i][j].isGoal = false;
-            levelMap[i][j].isRock = false;
-            levelMap[i][j].isPlayer = false;
+
         }
     }
     levelMap[p.x][p.y].isPlayer = true;
@@ -159,71 +169,6 @@ int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w,
     levelMap[r.x][r.y].isRock = true;
 
     return 0;
-}
-
-Player initPlayer(int x, int y){
-    Player p;
-    p.x = x;
-    p.y = y;
-    p.moveTime = 0;
-    std::queue<char> playerMoves;
-    //Further initialization steps...
-    return p;
-}
-
-Enemy initEnemy(int x, int y, ETYPE type){
-    Enemy e;
-    e.x = x;
-    e.y = y;
-    e.dead = false;
-    e.type = type;
-    e.moveTime = 0;
-    //define move interval
-    switch(type){
-        case BAT:
-            e.intervalMove = BAT_MOVE_INTERVAL;
-            break;
-        case RAT:
-            e.intervalMove = RAT_MOVE_INTERVAL;
-            break;
-        case SNAKE:
-            e.intervalMove = SNAKE_MOVE_INTERVAL;
-            break;
-        case SCORPION:
-            e.intervalMove = SCORPION_MOVE_INTERVAL;
-            break;
-    }
-    //switch(type) //set texture according to the enemy type
-    return e;
-}
-
-Rock initRock(int x, int y){
-    Rock r;
-    r.x = x;
-    r.y = y;
-    r.moveTime = 0.0f;
-    r.falling = false;
-
-    return r;
-}
-
-Bomb initBomb(int x, int y){
-    Bomb b;
-    b.x = x;
-    b.y = y;
-    b.moveTime = 0.0f;
-    b.falling = false;
-
-    return b; //Can I simplify the bomb and rock code into one?
-}
-
-LevelGoal initGoal(int x, int y, bool open){
-    LevelGoal g;
-    g.x = x;
-    g.y = y;
-    g.open = open;
-
-    return g;
 }
 
 void checkPlayerMovement(Player &p){
@@ -247,13 +192,13 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
         char Pmov = ' ';
         if(!p.playerMoves.empty()){
             Pmov = p.playerMoves.back();
-            if(Pmov == 'w' && p.y > 0)
+            if(Pmov == 'w' && p.y > 0 && !map[prex][prey-1].isBedrock)
                 p.y -= 1;
-            if(Pmov == 'a' && p.x > 0)
+            if(Pmov == 'a' && p.x > 0 && !map[prex-1][prey].isBedrock)
                 p.x -= 1;
-            if(Pmov == 's' && height - 1 > p.y)
+            if(Pmov == 's' && height - 1 > p.y && !map[prex][prey+1].isBedrock)
                 p.y += 1;
-            if(Pmov == 'd' && width - 1 > p.x)
+            if(Pmov == 'd' && width - 1 > p.x && !map[prex+1][prey].isBedrock)
                 p.x +=1;
             map[p.x][p.y].isFill = false;
         }
@@ -318,13 +263,13 @@ void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map){
     //std::cout << leftFilled << rightFilled << topFilled << botFilled << std::endl;
 
     std::vector<std::pair<int,int>> allowedMovements;
-    if(e.y > 0 && !topFilled)
+    if(e.y > 0 && !topFilled && !map[e.x][e.y-1].isBedrock)
         allowedMovements.push_back(std::make_pair(e.x, e.y - 1));
-    if(e.x > 0 && !leftFilled)
+    if(e.x > 0 && !leftFilled && !map[e.x-1][e.y].isBedrock)
         allowedMovements.push_back(std::make_pair(e.x - 1, e.y));
-    if(height - 1 > e.y && !botFilled)
+    if(height - 1 > e.y && !botFilled && !map[e.x][e.y+1].isBedrock)
         allowedMovements.push_back(std::make_pair(e.x, e.y + 1));
-    if(width - 1 > e.x && !rightFilled)
+    if(width - 1 > e.x && !rightFilled && !map[e.x+1][e.y].isBedrock)
         allowedMovements.push_back(std::make_pair(e.x + 1, e.y));
 
             //std::cout << "Hii" << std::endl;
@@ -389,7 +334,7 @@ int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<st
     else if(b.falling &&  b.moveTime >= ROCK_FALL_INTERVAL){
         b.falling = false;
 
-        bool leftFilled = b.x > 0 && map[b.x-1][b.y].isFill;
+        bool leftFilled = b.x > 0;
         bool rightFilled = b.x < width - 1 && map[b.x+1][b.y].isFill;
         bool topFilled = b.y > 0 && map[b.x][b.y-1].isFill;
         bool botFilled = b.y < height - 1 && map[b.x][b.y+1].isFill;
@@ -398,9 +343,9 @@ int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<st
         map[b.x+1][b.y].isFill = false;
         map[b.x+1][b.y+1].isFill = false;
         map[b.x+1][b.y-1].isFill = false;
-        map[b.x-1][b.y].isFill = false;
-        map[b.x-1][b.y+1].isFill = false;
-        map[b.x-1][b.y-1].isFill = false;
+        if(leftFilled)map[b.x-1][b.y].isFill = false;
+        if(leftFilled) map[b.x-1][b.y+1].isFill = false;
+        if(leftFilled)map[b.x-1][b.y-1].isFill = false;
         map[b.x][b.y+1].isFill = false;
         map[b.x][b.y-1].isFill = false;
         return 1; //Self destroy
