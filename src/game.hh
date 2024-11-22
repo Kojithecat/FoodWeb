@@ -101,7 +101,7 @@ SCREEN showMenuScreen();
 
 SCREEN runTestLevel();
 
-int fillMap(std::vector<std::vector<Casilla>> &levelMap, Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::set<std::pair<int,int>> sandlessSet);
+int fillMap(std::vector<std::vector<Casilla>> &levelMap, Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::set<std::pair<int,int>> sandlessSet);
 
 Player initPlayer(int x, int y);
 
@@ -130,5 +130,8 @@ void moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int de
 
 template <class T, class U>
 bool collision(const T& e1, const U& e2);
+
+template <class T>
+bool isEntityMapSync(const T& o, const std::vector<std::vector<Casilla>> &map);
 
 #endif

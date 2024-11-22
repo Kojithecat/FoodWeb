@@ -1,6 +1,6 @@
 #include "game.hh"
 #include "raylib.h"
-#include <algorithm>
+#include <type_traits>
 #include <iostream>
 #include <cstdint>
 #include <utility>
@@ -76,7 +76,7 @@ SCREEN runTestLevel(){
     sandlessCasillas.insert(std::make_pair(0, 0));
     sandlessCasillas.insert(std::make_pair(13, 1));
 
-    fillMap(levelMap, p, w, enemyVector, rockVector, sandlessCasillas);
+    fillMap(levelMap, p, w, enemyVector, rockVector, bombVector, sandlessCasillas);
 
     Camera2D camera;
     camera.offset =  {(float) p.x,(float) p.y};
@@ -121,6 +121,24 @@ SCREEN runTestLevel(){
         movePlayer(p, rockVector, bombVector, levelMap);
         moveEnemies(enemyVector, levelMap);
 
+        //Chack map-entities sync
+        if(isEntityMapSync(p,  levelMap))
+            std::cout << "Player Sync" << std::endl;
+        else std::cout << "Player not Sync" << std::endl;
+        for(Rock &r : rockVector)
+            if(isEntityMapSync(r, levelMap))
+                std::cout << "Rock Sync" << std::endl;
+            else std::cout << "Rock not Sync" << std::endl;
+        for(Bomb &b : bombVector)
+            if(isEntityMapSync(b, levelMap))
+                std::cout << "Bomb Sync" << std::endl;
+            else std::cout << "Bomb not Sync" << std::endl;
+        for(Enemy &e : enemyVector)
+            if(isEntityMapSync(e, levelMap))
+                std::cout << "Enemy Sync" << std::endl;
+            else std::cout << "Enemy not Sync" << std::endl;
+
+
         camera.target = {(float) p.x*TILESIZE - 5*TILESIZE,(float) p.y*TILESIZE - 5*TILESIZE};
 
         BeginDrawing();
@@ -153,7 +171,7 @@ SCREEN runTestLevel(){
     return MENUSCREEN;
 }
 
-int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::set<std::pair<int,int>> sandlessSet){
+int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::set<std::pair<int,int>> sandlessSet){
 
     for(int i = 0; i < levelMap.size(); i++) {
         for(int j = 0; j <levelMap[i].size(); j++){
@@ -170,9 +188,11 @@ int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w,
     levelMap[p.x][p.y].isPlayer = true;
     levelMap[w.x][w.y].isGoal = true;
     for(Enemy& e : enemyVector)
-    levelMap[e.x][e.y].isEnemy = true;
+        levelMap[e.x][e.y].isEnemy = true;
     for(Rock& r : rockVector)
-    levelMap[r.x][r.y].isRock = true;
+        levelMap[r.x][r.y].isRock = true;
+    for(Bomb &b : bombVector)
+        levelMap[b.x][b.y].isBomb = true;
 
     return 0;
 }
@@ -217,7 +237,7 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
         //Move rocks in front of the player
         for(Rock& r : rockVector){
             if(collision(r, p) && Pmov == 'a'){
-                std::cout << "hii" << std::endl;
+                //std::cout << "hii" << std::endl;
                 moveObject(r, map, -1, 0);
             }
             else if(collision(r, p) && Pmov == 'd'){
@@ -232,7 +252,7 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
         }
         for(Bomb& b : bombVector){
             if(collision(b, p) && Pmov == 'a'){
-                std::cout << "hii" << std::endl;
+                //std::cout << "hii" << std::endl;
                 moveObject(b, map, -1, 0);
             }
             else if(collision(b, p) && Pmov == 'd'){
@@ -312,7 +332,7 @@ void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<s
         && !map[r.x][r.y+1].isFill //The bottom tile is empty
         && !(r.x == p.x && r.y + 1 == p.y) //No player is below the rock
         && r.moveTime >= ROCK_FALL_INTERVAL){
-        std::cout << r.y << " " << r.moveTime << std::endl;
+        //std::cout << r.y << " " << r.moveTime << std::endl;
         r.moveTime = 0;
         map[r.x][r.y].isRock = false;
         r.y += 1;
@@ -361,22 +381,37 @@ int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<st
 
 template<class T>
 void moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay){
-    if(typeid(o).name() == "Rock"){
+    if(std::is_same<T, Rock>::value){
         map[o.x][o.y].isRock = false;
         map[o.x + deltax][o.y + deltay].isRock = true;
         map[o.x][o.y].isFill = false;
     }
-    else if(typeid(o).name() == "Bomb"){
+    else if(std::is_same<T, Bomb>::value){
         map[o.x][o.y].isBomb = false;
         map[o.x + deltax][o.y + deltay].isBomb = true;
         map[o.x][o.y].isFill = false;
     }
     o.x += deltax;
     o.y += deltay;
-
 }
 
 template <class T, class U>
 bool collision(const T& e1, const U& e2){
     return e1.x == e2.x && e1.y == e2.y;
+}
+
+template <class T>
+bool isEntityMapSync(const T& o, const std::vector<std::vector<Casilla>> &map){
+    if constexpr (std::is_same<T, Enemy>::value){
+        return map[o.x][o.y].isEnemy;
+    }
+    else if constexpr (std::is_same<T, Rock>::value){
+        return map[o.x][o.y].isRock;
+    }
+    else if constexpr (std::is_same<T, Bomb>::value){
+        return map[o.x][o.y].isBomb;
+    }
+    if constexpr (std::is_same<T, Player>::value){
+        return map[o.x][o.y].isPlayer;
+    }
 }
