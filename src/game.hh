@@ -6,7 +6,7 @@
 #include <set>
 #include <vector>
 
-#define TILESIZE 50
+#define TILESIZE 64
 
 const float MOVE_INTERVAL = 0.2f;
 const float SCORPION_MOVE_INTERVAL = 2*MOVE_INTERVAL;
@@ -14,6 +14,8 @@ const float RAT_MOVE_INTERVAL = MOVE_INTERVAL;
 const float BAT_MOVE_INTERVAL = 3*MOVE_INTERVAL;
 const float SNAKE_MOVE_INTERVAL = 5*MOVE_INTERVAL;
 const float ROCK_FALL_INTERVAL = MOVE_INTERVAL;
+
+
 
 typedef enum {
     LVL1,

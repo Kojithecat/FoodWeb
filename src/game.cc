@@ -16,8 +16,8 @@ const u32 seed = os_seed();
 engine generator(seed);
 std::uniform_int_distribution<u32> distribute(1,4);
 
-int width = 15;
-int height = 10;
+int width = 30;
+int height = 20;
 
 const int SCREEN_TILES_X = 20;
 const int SCREEN_TILES_Y = 15;
@@ -38,6 +38,9 @@ SCREEN showMenuScreen(){
 SCREEN runTestLevel(){
     std::vector<std::vector<Casilla>> levelMap(width, std::vector<Casilla>(height));
 
+    Texture2D sandTexture = LoadTexture("../assets/arena.png");
+    Texture2D bedrockTexture = LoadTexture("../assets/bedrock_cutre.png");
+    SetTextureFilter(bedrockTexture, TEXTURE_FILTER_BILINEAR);
     Player p = Player(1, 1);
 
     Enemy e1 = Enemy(13,4,RAT);
@@ -125,8 +128,8 @@ SCREEN runTestLevel(){
             ClearBackground(RAYWHITE);
             for(int i = 0; i < levelMap.size(); i++){
                 for(int j = 0; j < levelMap[i].size(); j++){
-                    if(levelMap[i][j].isBedrock) DrawRectangle(i*TILESIZE, j*TILESIZE, TILESIZE, TILESIZE, BLACK);
-                    else if(levelMap[i][j].isFill) DrawRectangle(i*TILESIZE, j*TILESIZE, TILESIZE, TILESIZE, ORANGE);
+                    if(levelMap[i][j].isBedrock) DrawTextureEx(bedrockTexture, (Vector2){(float) i*TILESIZE, (float) j*TILESIZE}, 0.0f, 4.0f, WHITE);//DrawRectangle(i*TILESIZE, j*TILESIZE, TILESIZE, TILESIZE, BLACK);
+                    else if(levelMap[i][j].isFill) DrawTextureEx(sandTexture, (Vector2){(float) i*TILESIZE, (float) j*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(i*TILESIZE, j*TILESIZE, TILESIZE, TILESIZE, ORANGE);
 
                     }
                 }
@@ -144,6 +147,9 @@ SCREEN runTestLevel(){
 
         //std::cout << e1.x << " " << e1.y << std::endl;
     }
+    UnloadTexture(sandTexture);
+    UnloadTexture(bedrockTexture);
+
     return MENUSCREEN;
 }
 
