@@ -117,9 +117,11 @@ void checkPlayerMovement(Player &p);
 
 void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<std::vector<Casilla>> &map);
 
-void moveEnemies(std::vector<Enemy> &enemyVector, std::vector<std::vector<Casilla>> &map);
+void moveEnemies(std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
 
-void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map);
+void moveEnemyRandom(Enemy &e, std::vector<std::vector<Casilla>> &map);
+
+void moveEnemyTowardsPlayer(Enemy &e, Player &p, std::vector<std::vector<Casilla>> &map);
 
 void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
 

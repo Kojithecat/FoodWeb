@@ -119,7 +119,7 @@ SCREEN runTestLevel(){
             }
         }
         movePlayer(p, rockVector, bombVector, levelMap);
-        moveEnemies(enemyVector, levelMap);
+        moveEnemies(enemyVector, p, levelMap);
 
         //Chack map-entities sync
         if(isEntityMapSync(p,  levelMap))
@@ -268,11 +268,11 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
     }
 }
 
-void moveEnemies(std::vector<Enemy> &enemyVector, std::vector<std::vector<Casilla>> &map){
+void moveEnemies(std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map){
     for(Enemy& e : enemyVector){
         int prex = e.x;
         int prey = e.y;
-        moveEnemy(e, map);
+        moveEnemyTowardsPlayer(e, p, map);
         if(prex != e.x || prey != e.y){
             map[prex][prey].isEnemy = false;
             map[e.x][e.y].isEnemy = true;
@@ -280,8 +280,59 @@ void moveEnemies(std::vector<Enemy> &enemyVector, std::vector<std::vector<Casill
     }
 }
 
-void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map){
+void moveEnemyRandom(Enemy &e, std::vector<std::vector<Casilla>> &map){
 
+    bool leftFilled = e.x > 0 && (map[e.x-1][e.y].isFill || map[e.x-1][e.y].isRock || map[e.x-1][e.y].isBomb || map[e.x-1][e.y].isBedrock);
+    bool rightFilled = e.x < width - 1 && (map[e.x+1][e.y].isFill || map[e.x+1][e.y].isRock || map[e.x+1][e.y].isBomb || map[e.x+1][e.y].isBedrock);
+    bool topFilled = e.y > 0 && (map[e.x][e.y-1].isFill|| map[e.x][e.y-1].isRock || map[e.x][e.y-1].isBomb || map[e.x][e.y-1].isBedrock);
+    bool botFilled = e.y < height - 1 && (map[e.x][e.y+1].isFill || map[e.x][e.y+1].isRock || map[e.x][e.y+1].isBomb || map[e.x][e.y+1].isBedrock);
+    //std::cout << leftFilled << rightFilled << topFilled << botFilled << std::endl;
+
+    std::vector<std::pair<int,int>> allowedMovements;
+    if(e.y > 0 && !topFilled)
+        allowedMovements.push_back(std::make_pair(e.x, e.y - 1));
+    if(e.x > 0 && !leftFilled)
+        allowedMovements.push_back(std::make_pair(e.x - 1, e.y));
+    if(height - 1 > e.y && !botFilled)
+        allowedMovements.push_back(std::make_pair(e.x, e.y + 1));
+    if(width - 1 > e.x && !rightFilled)
+        allowedMovements.push_back(std::make_pair(e.x + 1, e.y));
+
+    //std::cout << "Hii" << std::endl;
+    if(e.moveTime >= e.intervalMove){
+        //std::cout << "hiii" << std::endl;
+        if(allowedMovements.size()){
+            std::uniform_int_distribution<u32> randomMove(0, allowedMovements.size() -1);
+            auto Emov = allowedMovements[randomMove(generator)];
+            map[e.x][e.y].isEnemy = false;
+            e.x = Emov.first;
+            e.y = Emov.second;
+            map[e.x][e.y].isEnemy = true;
+            }
+
+        //Enemy movement
+        /*
+        int Emov = distribute(generator);
+        if(Emov==1 && e.y > 0 && !topFilled)
+            e.y -= 1;
+        if(Emov==2 && e.x > 0 && !leftFilled)
+            e.x -= 1;
+        if(Emov==3 && height - 1 > e.y && !botFilled)
+            e.y += 1;
+        if(Emov==4 && width- 1 > e.x && !rightFilled)
+            e.x += 1;
+            */
+        //map[e.x/TILESIZE][e.y/TILESIZE] = false;
+
+
+
+
+        e.moveTime = 0.0f;
+    }
+}
+
+void moveEnemyTowardsPlayer(Enemy &e, Player &p, std::vector<std::vector<Casilla>> &map){
+    //Implement A* pr Djikstra
     bool leftFilled = e.x > 0 && map[e.x-1][e.y].isFill;
     bool rightFilled = e.x < width - 1 && map[e.x+1][e.y].isFill;
     bool topFilled = e.y > 0 && map[e.x][e.y-1].isFill;
@@ -298,32 +349,33 @@ void moveEnemy(Enemy &e, std::vector<std::vector<Casilla>> &map){
     if(width - 1 > e.x && !rightFilled && !map[e.x+1][e.y].isBedrock)
         allowedMovements.push_back(std::make_pair(e.x + 1, e.y));
 
-            //std::cout << "Hii" << std::endl;
+             //std::cout << "Hii" << std::endl;
     if(e.moveTime >= e.intervalMove){
         //std::cout << "hiii" << std::endl;
         if(allowedMovements.size()){
-            std::uniform_int_distribution<u32> randomMove(0, allowedMovements.size() -1);
-            auto Emov = allowedMovements[randomMove(generator)];
-            map[e.x][e.y].isEnemy = false;
-            e.x = Emov.first;
-            e.y = Emov.second;
-            map[e.x][e.y].isEnemy = true;
+
+            std::pair<int, int> bestMove = allowedMovements[0];
+            int bestDistance = std::abs(p.x - bestMove.first) + std::abs(p.y - bestMove.second);
+
+            for(const auto &move : allowedMovements) {
+                int distance = std::abs(p.x - move.first) + std::abs(p.y - move.second);
+                if (distance < bestDistance){
+                    bestDistance = distance;
+                    bestMove = move;
+                }
+
             }
-        //Enemy movement
-        /*
-        int Emov = distribute(generator);
-        if(Emov==1 && e.y > 0 && !topFilled)
-            e.y -= 1;
-        if(Emov==2 && e.x > 0 && !leftFilled)
-            e.x -= 1;
-        if(Emov==3 && height - 1 > e.y && !botFilled)
-            e.y += 1;
-        if(Emov==4 && width- 1 > e.x && !rightFilled)
-            e.x += 1;
-            */
-        //map[e.x/TILESIZE][e.y/TILESIZE] = false;
-        e.moveTime = 0.0f;
-    }
+            //std::uniform_int_distribution<u32> randomMove(0, allowedMovements.size() -1);
+            //auto Emov = allowedMovements[randomMove(generator)]; Not random this time
+            map[e.x][e.y].isEnemy = false;
+            e.x = bestMove.first;
+            e.y = bestMove.second;
+            map[e.x][e.y].isEnemy = true;
+        }
+
+         e.moveTime = 0.0f;
+     }
+
 }
 
 void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map){
