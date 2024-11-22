@@ -1,5 +1,6 @@
 #include "game.hh"
 #include "raylib.h"
+#include <any>
 #include <type_traits>
 #include <iostream>
 #include <cstdint>
@@ -19,8 +20,8 @@ std::uniform_int_distribution<u32> distribute(1,4);
 int width = 30;
 int height = 20;
 
-const int SCREEN_TILES_X = 20;
-const int SCREEN_TILES_Y = 15;
+const int SCREEN_TILES_X = 16;
+const int SCREEN_TILES_Y = 12;
 
 
 SCREEN showMenuScreen(){
@@ -37,31 +38,43 @@ SCREEN showMenuScreen(){
 
 SCREEN runTestLevel(){
     std::vector<std::vector<Casilla>> levelMap(width, std::vector<Casilla>(height));
-
+    //Set textures
     Texture2D sandTexture = LoadTexture("../assets/arena.png");
     Texture2D bedrockTexture = LoadTexture("../assets/bedrock_cutre.png");
     SetTextureFilter(bedrockTexture, TEXTURE_FILTER_BILINEAR);
+    //Define entities
     Player p = Player(1, 1);
 
-    Enemy e1 = Enemy(13,4,RAT);
+    Enemy e1 = Enemy(13,6,RAT);
     Enemy e2 = Enemy(6, 6, BAT);
+    Enemy e3 = Enemy(12,12, SNAKE);
 
     //Rock r1 = initRock(6, 3);
-    Rock r2 = Rock(13, 1);
+    Rock r1 = Rock(13, 4);
+
+    Rock r2 = Rock(5, 9);
+    Rock r3 = Rock(6, 8);
+    Rock r4 = Rock(7, 8);
+    Rock r5 = Rock(8, 8);
 
     Bomb b = Bomb(6,3);
 
     LevelGoal w = LevelGoal(width - 2, height - 2, true);
-    //Uniform random umber generator from 1 to 4
+
     std::vector<Enemy> enemyVector;
+    std::vector<Rock> rockVector;
+    std::vector<Bomb> bombVector;
+
     enemyVector.push_back(e1);
     enemyVector.push_back(e2);
-
-    std::vector<Rock> rockVector;
+    enemyVector.push_back(e3);
     //rockVector.push_back(r1);
+    rockVector.push_back(r1);
     rockVector.push_back(r2);
+    rockVector.push_back(r3);
+    rockVector.push_back(r4);
+    rockVector.push_back(r5);
 
-    std::vector<Bomb> bombVector;
     bombVector.push_back(b);
 
     std::set<std::pair<int,int>> sandlessCasillas;
@@ -70,22 +83,27 @@ SCREEN runTestLevel(){
     sandlessCasillas.insert(std::make_pair(6, 5));
     sandlessCasillas.insert(std::make_pair(6, 6));
     sandlessCasillas.insert(std::make_pair(6, 7));
-    sandlessCasillas.insert(std::make_pair(13, 3));
-    sandlessCasillas.insert(std::make_pair(13, 4));
-    sandlessCasillas.insert(std::make_pair(13, 5));
-    sandlessCasillas.insert(std::make_pair(0, 0));
+
+    sandlessCasillas.insert(std::make_pair(13, 6));
+    sandlessCasillas.insert(std::make_pair(13, 7));
+    sandlessCasillas.insert(std::make_pair(13, 8));
+    sandlessCasillas.insert(std::make_pair(1, 1));
     sandlessCasillas.insert(std::make_pair(13, 1));
+
+    for(int y = 10; y < height - 1; y++){
+        for(int x = 1; x < width - 1; x++){
+            sandlessCasillas.insert(std::make_pair(x,y));
+        }
+    }
+
 
     fillMap(levelMap, p, w, enemyVector, rockVector, bombVector, sandlessCasillas);
 
     Camera2D camera;
-    camera.offset =  {(float) p.x,(float) p.y};
-    camera.target = {(float) p.x,(float) p.y};
-    camera.rotation = 0.0f;
-    camera.zoom = 1.0f;
+    initCamera(camera, p);
 
     while(!IsKeyPressed(KEY_ESCAPE)){
-
+        //Check entity collisions
         for(Enemy& e : enemyVector){
             //std::cout << e.y << std::endl;
             if(collision(e,p) && !e.dead) return MENUSCREEN;
@@ -98,6 +116,7 @@ SCREEN runTestLevel(){
         }
         if(collision(w,p)) return LVL1;
 
+        //Update entities moveTimes
         p.moveTime += GetFrameTime();
         for(Enemy& e : enemyVector){
             e.moveTime += GetFrameTime();
@@ -108,6 +127,7 @@ SCREEN runTestLevel(){
         for(Bomb& b : bombVector)
             b.moveTime += GetFrameTime();
 
+        //Check movement and falling entities
         checkPlayerMovement(p);
         for(Rock& r : rockVector)
             fallRock(r, enemyVector, p, levelMap);
@@ -118,6 +138,7 @@ SCREEN runTestLevel(){
                 ++it;
             }
         }
+        //move Entities
         movePlayer(p, rockVector, bombVector, levelMap);
         moveEnemies(enemyVector, p, levelMap);
 
@@ -138,9 +159,12 @@ SCREEN runTestLevel(){
                 std::cout << "Enemy Sync" << std::endl;
             else std::cout << "Enemy not Sync" << std::endl;
 
+        //Camera Target
+        float targetx = p.x*TILESIZE - SCREEN_TILES_X*TILESIZE/2.0;
+        float targety = p.y*TILESIZE - SCREEN_TILES_Y*TILESIZE/2.0;
+        camera.target = {targetx, targety};
 
-        camera.target = {(float) p.x*TILESIZE - 5*TILESIZE,(float) p.y*TILESIZE - 5*TILESIZE};
-
+        //Draw
         BeginDrawing();
         BeginMode2D(camera);
             ClearBackground(RAYWHITE);
@@ -169,6 +193,15 @@ SCREEN runTestLevel(){
     UnloadTexture(bedrockTexture);
 
     return MENUSCREEN;
+}
+
+void initCamera(Camera2D &camera, Player &p){
+
+    camera.offset =  {(float) p.x,(float) p.y};
+    camera.target = {(float) p.x,(float) p.y};
+    camera.rotation = 0.0f;
+    camera.zoom = 1.0f;
+
 }
 
 int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::set<std::pair<int,int>> sandlessSet){

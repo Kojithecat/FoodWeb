@@ -101,6 +101,8 @@ SCREEN showMenuScreen();
 
 SCREEN runTestLevel();
 
+void initCamera(Camera2D &camera, Player &p);
+
 int fillMap(std::vector<std::vector<Casilla>> &levelMap, Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::set<std::pair<int,int>> sandlessSet);
 
 Player initPlayer(int x, int y);
