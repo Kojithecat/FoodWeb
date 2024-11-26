@@ -14,6 +14,7 @@ const float RAT_MOVE_INTERVAL = MOVE_INTERVAL;
 const float BAT_MOVE_INTERVAL = 3*MOVE_INTERVAL;
 const float SNAKE_MOVE_INTERVAL = 5*MOVE_INTERVAL;
 const float ROCK_FALL_INTERVAL = MOVE_INTERVAL;
+const float POISON_EXPAND_INTERVAL = 10*MOVE_INTERVAL;
 
 
 
@@ -77,6 +78,17 @@ struct Bomb{
     Bomb(int startX, int startY) : x(startX), y(startY) {}
 };
 
+struct Poison{
+    int x;
+    int y;
+    float moveTime = 0.0f;
+    Texture2D texture;
+    bool isContained = true;
+
+    Poison(int startX, int startY) : x(startX), y(startY) {}
+
+};
+
 struct LevelGoal{
     int x;
     int y;
@@ -93,7 +105,7 @@ struct Casilla{
     bool isGoal = false;
     bool isBomb = false;
     bool isBedrock = false;
-
+    bool isPoison = false;
     //...
 };
 
@@ -103,7 +115,7 @@ SCREEN runTestLevel();
 
 void initCamera(Camera2D &camera, Player &p);
 
-int fillMap(std::vector<std::vector<Casilla>> &levelMap, Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::set<std::pair<int,int>> sandlessSet);
+int fillMap(std::vector<std::vector<Casilla>> &levelMap, Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector, std::set<std::pair<int,int>> sandlessSet);
 
 Player initPlayer(int x, int y);
 
@@ -128,6 +140,8 @@ void moveEnemyTowardsPlayer(Enemy &e, Player &p, std::vector<std::vector<Casilla
 void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
 
 int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
+
+void expandPoison(std::vector<Poison> &poisonVector, std::vector<std::vector<Casilla>> &map);
 
 template<class T>
 void moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay);

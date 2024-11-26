@@ -1,6 +1,5 @@
 #include "game.hh"
 #include "raylib.h"
-#include <any>
 #include <type_traits>
 #include <iostream>
 #include <cstdint>
@@ -59,11 +58,14 @@ SCREEN runTestLevel(){
 
     Bomb b = Bomb(6,3);
 
+    Poison v = Poison(3,10);
+
     LevelGoal w = LevelGoal(width - 2, height - 2, true);
 
     std::vector<Enemy> enemyVector;
     std::vector<Rock> rockVector;
     std::vector<Bomb> bombVector;
+    std::vector<Poison> poisonVector;
 
     enemyVector.push_back(e1);
     enemyVector.push_back(e2);
@@ -76,6 +78,7 @@ SCREEN runTestLevel(){
     rockVector.push_back(r5);
 
     bombVector.push_back(b);
+    poisonVector.push_back(v);
 
     std::set<std::pair<int,int>> sandlessCasillas;
 
@@ -96,8 +99,7 @@ SCREEN runTestLevel(){
         }
     }
 
-
-    fillMap(levelMap, p, w, enemyVector, rockVector, bombVector, sandlessCasillas);
+    fillMap(levelMap, p, w, enemyVector, rockVector, bombVector, poisonVector, sandlessCasillas);
 
     Camera2D camera;
     initCamera(camera, p);
@@ -107,14 +109,18 @@ SCREEN runTestLevel(){
         for(Enemy& e : enemyVector){
             //std::cout << e.y << std::endl;
             if(collision(e,p) && !e.dead) return MENUSCREEN;
-            for(Rock& r: rockVector){
-               if(collision(e,r))  e.dead = true;
-            }
-            for(Bomb& b: bombVector){
-                if(collision(e,b))  e.dead = true;
-            }
+            for(Rock& r: rockVector)
+               if(collision(e,r)) e.dead = true;
+            for(Bomb& b: bombVector)
+                if(collision(e,b)) e.dead = true;
+            for(Poison& v : poisonVector)
+                if(collision(e,v)) e.dead = true;
         }
+        for(Poison& v : poisonVector)
+            if(collision(v,p)) return MENUSCREEN;
         if(collision(w,p)) return LVL1;
+
+
 
         //Update entities moveTimes
         p.moveTime += GetFrameTime();
@@ -126,6 +132,8 @@ SCREEN runTestLevel(){
             r.moveTime += GetFrameTime();
         for(Bomb& b : bombVector)
             b.moveTime += GetFrameTime();
+        for(Poison& v : poisonVector)
+            v.moveTime += GetFrameTime();
 
         //Check movement and falling entities
         checkPlayerMovement(p);
@@ -138,6 +146,7 @@ SCREEN runTestLevel(){
                 ++it;
             }
         }
+        expandPoison(poisonVector, levelMap);
         //move Entities
         movePlayer(p, rockVector, bombVector, levelMap);
         moveEnemies(enemyVector, p, levelMap);
@@ -158,6 +167,10 @@ SCREEN runTestLevel(){
             if(isEntityMapSync(e, levelMap))
                 std::cout << "Enemy Sync" << std::endl;
             else std::cout << "Enemy not Sync" << std::endl;
+        for(Poison& v : poisonVector)
+            if(isEntityMapSync(v, levelMap))
+                std::cout << "Poison sync" << std::endl;
+            else std::cout << "Poison not sync" << std::endl;
 
         //Camera Target
         float targetx = p.x*TILESIZE - SCREEN_TILES_X*TILESIZE/2.0;
@@ -183,7 +196,9 @@ SCREEN runTestLevel(){
             for(Rock& r : rockVector)
                 DrawRectangle(r.x*TILESIZE, r.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
             for(Bomb& b : bombVector)
-                DrawRectangle(b.x*TILESIZE, b.y*TILESIZE, TILESIZE, TILESIZE, PURPLE);
+                DrawRectangle(b.x*TILESIZE, b.y*TILESIZE, TILESIZE, TILESIZE, BLUE);
+            for(Poison& v : poisonVector)
+                DrawRectangle(v.x*TILESIZE, v.y*TILESIZE, TILESIZE, TILESIZE, PURPLE);
         EndMode2D();
         EndDrawing();
 
@@ -204,7 +219,7 @@ void initCamera(Camera2D &camera, Player &p){
 
 }
 
-int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::set<std::pair<int,int>> sandlessSet){
+int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector, std::set<std::pair<int,int>> sandlessSet){
 
     for(int i = 0; i < levelMap.size(); i++) {
         for(int j = 0; j <levelMap[i].size(); j++){
@@ -212,10 +227,8 @@ int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w,
                 levelMap[i][j].isBedrock = true;
             else if(sandlessSet.find(std::make_pair(i,j)) != sandlessSet.end()){
                 levelMap[i][j].isFill = false;
-
             }
             else levelMap[i][j].isFill = true;
-
         }
     }
     levelMap[p.x][p.y].isPlayer = true;
@@ -226,6 +239,8 @@ int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w,
         levelMap[r.x][r.y].isRock = true;
     for(Bomb &b : bombVector)
         levelMap[b.x][b.y].isBomb = true;
+    for(Poison& v : poisonVector)
+        levelMap[v.x][v.y].isPoison = true;
 
     return 0;
 }
@@ -445,23 +460,49 @@ int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<st
     else if(b.falling &&  b.moveTime >= ROCK_FALL_INTERVAL){
         b.falling = false;
 
-        bool leftFilled = b.x > 0;
-        bool rightFilled = b.x < width - 1 && map[b.x+1][b.y].isFill;
-        bool topFilled = b.y > 0 && map[b.x][b.y-1].isFill;
-        bool botFilled = b.y < height - 1 && map[b.x][b.y+1].isFill;
-
         //TODO check bomb explosions in margins
         map[b.x+1][b.y].isFill = false;
         map[b.x+1][b.y+1].isFill = false;
         map[b.x+1][b.y-1].isFill = false;
-        if(leftFilled)map[b.x-1][b.y].isFill = false;
-        if(leftFilled) map[b.x-1][b.y+1].isFill = false;
-        if(leftFilled)map[b.x-1][b.y-1].isFill = false;
+        map[b.x-1][b.y].isFill = false;
+        map[b.x-1][b.y+1].isFill = false;
+        map[b.x-1][b.y-1].isFill = false;
         map[b.x][b.y+1].isFill = false;
         map[b.x][b.y-1].isFill = false;
         return 1; //Self destroy
     }
     return 0;
+}
+
+void expandPoison(std::vector<Poison> &poisonVector, std::vector<std::vector<Casilla>> &map){
+    std::set<std::pair<int,int>> newPoisonCoords;
+    for(Poison& v : poisonVector){
+        if(v.moveTime > POISON_EXPAND_INTERVAL){
+
+            if(!map[v.x+1][v.y].isFill && !map[v.x+1][v.y].isBedrock && !map[v.x+1][v.y].isPoison) {
+                map[v.x+1][v.y].isPoison = true;
+                newPoisonCoords.insert(std::make_pair(v.x+1,v.y));
+            }
+            if(!map[v.x-1][v.y].isFill && !map[v.x-1][v.y].isBedrock && !map[v.x-1][v.y].isPoison) {
+                map[v.x-1][v.y].isPoison = true;
+                newPoisonCoords.insert(std::make_pair(v.x-1,v.y));
+            }
+            if(!map[v.x][v.y+1].isFill && !map[v.x][v.y+1].isBedrock && !map[v.x][v.y+1].isPoison) {
+                map[v.x][v.y+1].isPoison = true;
+                newPoisonCoords.insert(std::make_pair(v.x,v.y+1));
+            }
+            if(!map[v.x][v.y-1].isFill && !map[v.x][v.y-1].isBedrock && !map[v.x][v.y-1].isPoison) {
+                map[v.x][v.y-1].isPoison = true;
+                newPoisonCoords.insert(std::make_pair(v.x,v.y-1));
+            }
+
+            v.moveTime = 0.0f;
+        }
+    }
+    for(std::pair<int,int> p : newPoisonCoords){
+        Poison newv = Poison(p.first,p.second);
+        poisonVector.push_back(newv);
+    }
 }
 
 template<class T>
@@ -498,5 +539,8 @@ bool isEntityMapSync(const T& o, const std::vector<std::vector<Casilla>> &map){
     }
     if constexpr (std::is_same<T, Player>::value){
         return map[o.x][o.y].isPlayer;
+    }
+    if constexpr (std::is_same<T, Poison>::value){
+        return map[o.x][o.y].isPoison;
     }
 }
