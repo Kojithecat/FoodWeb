@@ -191,16 +191,16 @@ SCREEN runTestLevel(){
                     }
                 }
             DrawRectangle(w.x*TILESIZE, w.y*TILESIZE, TILESIZE, TILESIZE, GREEN);
-            DrawRectangle(p.x*TILESIZE, p.y*TILESIZE, TILESIZE, TILESIZE, YELLOW);
+            DrawTextureEx(p.texture, (Vector2){(float) p.x*TILESIZE, (float) p.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(p.x*TILESIZE, p.y*TILESIZE, TILESIZE, TILESIZE, YELLOW);
             for(Enemy& e : enemyVector)
                 if(!e.dead)
                     DrawRectangle(e.x*TILESIZE, e.y*TILESIZE, TILESIZE, TILESIZE, RED);
             for(Rock& r : rockVector)
                 DrawRectangle(r.x*TILESIZE, r.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
             for(Bomb& b : bombVector)
-                DrawRectangle(b.x*TILESIZE, b.y*TILESIZE, TILESIZE, TILESIZE, BLUE);
+                DrawTextureEx(b.texture, (Vector2){(float) b.x*TILESIZE, (float) b.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(b.x*TILESIZE, b.y*TILESIZE, TILESIZE, TILESIZE, BLUE);
             for(Poison& v : poisonVector)
-                DrawRectangle(v.x*TILESIZE, v.y*TILESIZE, TILESIZE, TILESIZE, PURPLE);
+                DrawTextureEx(v.texture, (Vector2){(float) v.x*TILESIZE, (float) v.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(v.x*TILESIZE, v.y*TILESIZE, TILESIZE, TILESIZE, PURPLE);
         EndMode2D();
         EndDrawing();
 
@@ -495,7 +495,7 @@ void moveEnemyTowardsPlayer(Enemy &e, Player &p, std::vector<std::vector<Casilla
 
 void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map){
 
-    if(r.y +1 < map[0].size() //Rock would not fall outbounds
+    if( !map[r.x][r.y+1].isBedrock //Rock would not fall outbounds
         && !map[r.x][r.y+1].isFill //The bottom tile is empty
         && !(r.x == p.x && r.y + 1 == p.y) //No player is below the rock
         && r.moveTime >= ROCK_FALL_INTERVAL){
@@ -512,7 +512,7 @@ void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<s
 
 int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map){
 
-    if(b.y +1 < map[0].size() //Rock would not fall outbounds
+    if(!map[b.x][b.y+1].isBedrock //bomb would not fall outbounds
         && !map[b.x][b.y+1].isFill //The bottom tile is empty
         && !(b.x == p.x && b.y + 1 == p.y) //No player is below the rock
         && b.moveTime >= ROCK_FALL_INTERVAL){

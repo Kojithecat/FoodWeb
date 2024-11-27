@@ -40,7 +40,7 @@ struct Player {
     int y;
     float moveTime = 0.0f;
     std::queue<char> playerMoves;
-    Texture2D texture;
+    Texture2D texture = LoadTexture("../assets/character_cutre.png");;
     //std:vector<Item> objects;
 
     Player(int startX, int startY) : x(startX), y(startY) {}
@@ -72,7 +72,7 @@ struct Bomb{
     int x;
     int y;
     float moveTime = 0.0f;
-    Texture2D texture;
+    Texture2D texture = LoadTexture("../assets/bomb.png");
     bool falling = false;
 
     Bomb(int startX, int startY) : x(startX), y(startY) {}
@@ -82,7 +82,7 @@ struct Poison{
     int x;
     int y;
     float moveTime = 0.0f;
-    Texture2D texture;
+    Texture2D texture = LoadTexture("../assets/veneno_cutre.png");
     bool isContained = true;
 
     Poison(int startX, int startY) : x(startX), y(startY) {}
