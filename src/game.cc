@@ -40,6 +40,8 @@ SCREEN runTestLevel(){
     //Set textures
     Texture2D sandTexture = LoadTexture("../assets/arena.png");
     Texture2D bedrockTexture = LoadTexture("../assets/bedrock_cutre.png");
+
+    //RenderTexture2D background = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     SetTextureFilter(bedrockTexture, TEXTURE_FILTER_BILINEAR);
     //Define entities
     Player p = Player(1, 1);
@@ -247,14 +249,16 @@ int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w,
 
 void checkPlayerMovement(Player &p){
 
-    if(IsKeyDown(KEY_W))// && p.y > 0)
-        p.playerMoves.push('w');//p.y -= TILESIZE;
-    if(IsKeyDown(KEY_A))// && p.x > 0)
-        p.playerMoves.push('a');//p.x -= TILESIZE;
-    if(IsKeyDown(KEY_S))// && GetScreenHeight()-TILESIZE > p.y)
-        p.playerMoves.push('s');//p.y += TILESIZE;
-    if(IsKeyDown(KEY_D))// && GetScreenWidth()-TILESIZE > p.x)
-        p.playerMoves.push('d');//p.x +=TILESIZE;
+    if(p.moveTime > MOVE_INTERVAL/4){
+        if(IsKeyDown(KEY_W))// && p.y > 0)
+            p.playerMoves.push('w');//p.y -= TILESIZE;
+        if(IsKeyDown(KEY_A))// && p.x > 0)
+            p.playerMoves.push('a');//p.x -= TILESIZE;
+        if(IsKeyDown(KEY_S))// && GetScreenHeight()-TILESIZE > p.y)
+            p.playerMoves.push('s');//p.y += TILESIZE;
+        if(IsKeyDown(KEY_D))// && GetScreenWidth()-TILESIZE > p.x)
+            p.playerMoves.push('d');//p.x +=TILESIZE;
+    }
 }
 
 void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<std::vector<Casilla>> &map){
