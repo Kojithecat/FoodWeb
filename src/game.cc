@@ -266,14 +266,77 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
         char Pmov = ' ';
         if(!p.playerMoves.empty()){
             Pmov = p.playerMoves.back();
-            if(Pmov == 'w' && p.y > 0 && !map[prex][prey-1].isBedrock)
+            if(Pmov == 'w' && !map[prex][prey-1].isBedrock){
                 p.y -= 1;
-            if(Pmov == 'a' && p.x > 0 && !map[prex-1][prey].isBedrock)
+                for(Rock& r : rockVector){
+                    if(collision(r, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(r, map, 0, -1))
+                            p.y +=1;
+                    }
+                }
+                for(Bomb& b : bombVector){
+                    if(collision(b, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(b, map, 0, -1))
+                            p.y +=1;
+                    }
+                }
+            }
+            if(Pmov == 'a' && !map[prex-1][prey].isBedrock){
                 p.x -= 1;
-            if(Pmov == 's' && height - 1 > p.y && !map[prex][prey+1].isBedrock)
+                for(Rock& r : rockVector){
+                    if(collision(r, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(r, map, -1, 0))
+                            p.x +=1;
+                    }
+                }
+                for(Bomb& b : bombVector){
+                    if(collision(b, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(b, map, -1, 0))
+                            p.x +=1;
+                    }
+                }
+            }
+
+            if(Pmov == 's' && !map[prex][prey+1].isBedrock){
                 p.y += 1;
-            if(Pmov == 'd' && width - 1 > p.x && !map[prex+1][prey].isBedrock)
+                for(Rock& r : rockVector){
+                    if(collision(r, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(r, map, 0, 1))
+                            p.y -=1;
+                    }
+                }
+                for(Bomb& b : bombVector){
+                    if(collision(b, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(b, map, 0, 1))
+                            p.y -=1;
+                    }
+                }
+            }
+
+            if(Pmov == 'd' && !map[prex+1][prey].isBedrock){
                 p.x +=1;
+                for(Rock& r : rockVector){
+                    if(collision(r, p)){
+                        std::cout << "hii" << std::endl;
+                        if(!moveObject(r, map, 1, 0))
+                            p.x -=1;
+                    }
+                }
+                for(Bomb& b : bombVector){
+                    if(collision(b, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(b, map, 1, 0))
+                            p.x -=1;
+                    }
+                }
+            }
+
             map[p.x][p.y].isFill = false;
         }
         p.moveTime = 0.0f;
@@ -283,7 +346,7 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
         map[prex][prey].isPlayer = false;
         map[p.x][p.y].isPlayer = true;
         //Move rocks in front of the player
-        for(Rock& r : rockVector){
+        /*for(Rock& r : rockVector){
             if(collision(r, p) && Pmov == 'a'){
                 //std::cout << "hii" << std::endl;
                 moveObject(r, map, -1, 0);
@@ -297,8 +360,8 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
             else if(collision(r, p) && Pmov == 's'){
                 moveObject(r, map, 0, 1);
             }
-        }
-        for(Bomb& b : bombVector){
+        }*/
+        /*for(Bomb& b : bombVector){
             if(collision(b, p) && Pmov == 'a'){
                 //std::cout << "hii" << std::endl;
                 moveObject(b, map, -1, 0);
@@ -312,7 +375,7 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
             else if(collision(b, p) && Pmov == 's'){
                 moveObject(b, map, 0, 1);
             }
-        }
+        }*/
     }
 }
 
@@ -506,19 +569,22 @@ void expandPoison(std::vector<Poison> &poisonVector, std::vector<std::vector<Cas
 }
 
 template<class T>
-void moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay){
-    if(std::is_same<T, Rock>::value){
+int moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay){
+    if(map[o.x + deltax][o.y + deltay].isBedrock || map[o.x + deltax][o.y + deltay].isRock || map[o.x + deltax][o.y + deltay].isBomb )
+        return 0; //Movement not possible
+    else if(std::is_same<T, Rock>::value){
         map[o.x][o.y].isRock = false;
         map[o.x + deltax][o.y + deltay].isRock = true;
-        map[o.x][o.y].isFill = false;
     }
     else if(std::is_same<T, Bomb>::value){
         map[o.x][o.y].isBomb = false;
         map[o.x + deltax][o.y + deltay].isBomb = true;
-        map[o.x][o.y].isFill = false;
     }
+    map[o.x][o.y].isFill = false;
     o.x += deltax;
     o.y += deltay;
+    map[o.x][o.y].isFill = false;
+    return 1; //Movement possible and done
 }
 
 template <class T, class U>

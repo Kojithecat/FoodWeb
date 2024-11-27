@@ -144,7 +144,7 @@ int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<st
 void expandPoison(std::vector<Poison> &poisonVector, std::vector<std::vector<Casilla>> &map);
 
 template<class T>
-void moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay);
+int moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay);
 
 template <class T, class U>
 bool collision(const T& e1, const U& e2);
