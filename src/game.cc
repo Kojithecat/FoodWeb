@@ -11,6 +11,10 @@
 using u32 = uint_least32_t;
 using engine = std::mt19937;
 
+
+
+
+
 std::random_device os_seed;
 const u32 seed = os_seed();
 engine generator(seed);
@@ -40,8 +44,7 @@ SCREEN runTestLevel(){
     //Set textures
     Texture2D sandTexture = LoadTexture("../assets/arena.png");
     Texture2D bedrockTexture = LoadTexture("../assets/bedrock_cutre.png");
-
-    //RenderTexture2D background = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+       //RenderTexture2D background = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     SetTextureFilter(bedrockTexture, TEXTURE_FILTER_BILINEAR);
     //Define entities
     Player p = Player(1, 1);
@@ -108,23 +111,19 @@ SCREEN runTestLevel(){
 
     while(!IsKeyPressed(KEY_ESCAPE)){
         //Check entity collisions
-        for(Enemy& e : enemyVector){
-            //std::cout << e.y << std::endl;
-            if(collision(e,p) && !e.dead) return MENUSCREEN;
-            for(Rock& r: rockVector)
-               if(collision(e,r)) e.dead = true;
-            for(Bomb& b: bombVector)
-                if(collision(e,b)) e.dead = true;
-            for(Poison& v : poisonVector)
-                if(collision(e,v)) e.dead = true;
+        int updateScreen = checkCollisions(p, w, enemyVector, rockVector, bombVector, poisonVector);
+        if(updateScreen == 0){
+            //Player death
+            return MENUSCREEN;
         }
-        for(Poison& v : poisonVector)
-            if(collision(v,p)) return MENUSCREEN;
-        if(collision(w,p)) return LVL1;
+        else if(updateScreen == 1){
+            //Player beats level
+            return LVL1;
 
-
+        }
 
         //Update entities moveTimes
+
         p.moveTime += GetFrameTime();
         for(Enemy& e : enemyVector){
             e.moveTime += GetFrameTime();
@@ -153,7 +152,7 @@ SCREEN runTestLevel(){
         movePlayer(p, rockVector, bombVector, levelMap);
         moveEnemies(enemyVector, p, levelMap);
 
-        //Chack map-entities sync
+        //Chack map-entities sync (temporal only)
         if(isEntityMapSync(p,  levelMap))
             std::cout << "Player Sync" << std::endl;
         else std::cout << "Player not Sync" << std::endl;
@@ -175,11 +174,10 @@ SCREEN runTestLevel(){
             else std::cout << "Poison not sync" << std::endl;
 
         //Camera Target
-        float targetx = p.x*TILESIZE - SCREEN_TILES_X*TILESIZE/2.0;
-        float targety = p.y*TILESIZE - SCREEN_TILES_Y*TILESIZE/2.0;
-        camera.target = {targetx, targety};
+        updateCamera(camera, p);
 
         //Draw
+        //drawLevel(camera, levelMap, )
         BeginDrawing();
         BeginMode2D(camera);
             ClearBackground(RAYWHITE);
@@ -591,6 +589,24 @@ int moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int del
     return 1; //Movement possible and done
 }
 
+int checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector){
+    for(Enemy& e : enemyVector){
+        //std::cout << e.y << std::endl;
+        if(collision(e,p) && !e.dead) return MENUSCREEN;
+        for(Rock& r: rockVector)
+            if(collision(e,r)) e.dead = true;
+        for(Bomb& b: bombVector)
+            if(collision(e,b)) e.dead = true;
+        for(Poison& v : poisonVector)
+            if(collision(e,v)) e.dead = true;
+    }
+    for(Poison& v : poisonVector)
+        if(collision(v,p)) return 0;
+    if(collision(w,p)) return 1;
+
+    return -1;
+}
+
 template <class T, class U>
 bool collision(const T& e1, const U& e2){
     return e1.x == e2.x && e1.y == e2.y;
@@ -613,4 +629,10 @@ bool isEntityMapSync(const T& o, const std::vector<std::vector<Casilla>> &map){
     if constexpr (std::is_same<T, Poison>::value){
         return map[o.x][o.y].isPoison;
     }
+}
+
+void updateCamera(Camera2D &camera, Player &p){
+    float targetx = p.x*TILESIZE - SCREEN_TILES_X*TILESIZE/2.0;
+    float targety = p.y*TILESIZE - SCREEN_TILES_Y*TILESIZE/2.0;
+    camera.target = {targetx, targety};
 }

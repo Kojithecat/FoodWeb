@@ -146,10 +146,14 @@ void expandPoison(std::vector<Poison> &poisonVector, std::vector<std::vector<Cas
 template<class T>
 int moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay);
 
+int checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector);
+
 template <class T, class U>
 bool collision(const T& e1, const U& e2);
 
 template <class T>
 bool isEntityMapSync(const T& o, const std::vector<std::vector<Casilla>> &map);
+
+void updateCamera(Camera2D &camera, Player &p);
 
 #endif
