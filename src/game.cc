@@ -192,7 +192,7 @@ SCREEN runTestLevel(){
             DrawTextureEx(p.texture, (Vector2){(float) p.x*TILESIZE, (float) p.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(p.x*TILESIZE, p.y*TILESIZE, TILESIZE, TILESIZE, YELLOW);
             for(Enemy& e : enemyVector)
                 if(!e.dead)
-                    DrawRectangle(e.x*TILESIZE, e.y*TILESIZE, TILESIZE, TILESIZE, RED);
+                    DrawTextureEx(e.texture, (Vector2){(float) e.x*TILESIZE, (float) e.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(e.x*TILESIZE, e.y*TILESIZE, TILESIZE, TILESIZE, RED);
             for(Rock& r : rockVector)
                 DrawRectangle(r.x*TILESIZE, r.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
             for(Bomb& b : bombVector)

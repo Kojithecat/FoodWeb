@@ -51,7 +51,7 @@ struct Enemy {
     int y;
     bool dead = false;
     float moveTime = 0.0f;
-    Texture2D texture;
+    Texture2D texture = LoadTexture("../assets/rat.png");
     ETYPE type;
     float intervalMove;
 
