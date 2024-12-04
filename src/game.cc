@@ -7,13 +7,10 @@
 #include <random>
 #include <set>
 #include <queue>
+#include <vector>
 
 using u32 = uint_least32_t;
 using engine = std::mt19937;
-
-
-
-
 
 std::random_device os_seed;
 const u32 seed = os_seed();
@@ -63,6 +60,8 @@ SCREEN runTestLevel(){
 
     Bomb b = Bomb(6,3);
 
+    Magnet m = Magnet(20,5);
+
     Poison v = Poison(3,10);
 
     LevelGoal w = LevelGoal(width - 2, height - 2, true);
@@ -70,6 +69,7 @@ SCREEN runTestLevel(){
     std::vector<Enemy> enemyVector;
     std::vector<Rock> rockVector;
     std::vector<Bomb> bombVector;
+    std::vector<Magnet> magnetVector;
     std::vector<Poison> poisonVector;
 
     enemyVector.push_back(e1);
@@ -83,6 +83,9 @@ SCREEN runTestLevel(){
     rockVector.push_back(r5);
 
     bombVector.push_back(b);
+
+    magnetVector.push_back(m);
+
     poisonVector.push_back(v);
 
     std::set<std::pair<int,int>> sandlessCasillas;
@@ -104,7 +107,7 @@ SCREEN runTestLevel(){
         }
     }
 
-    fillMap(levelMap, p, w, enemyVector, rockVector, bombVector, poisonVector, sandlessCasillas);
+    fillMap(levelMap, p, w, enemyVector, rockVector, bombVector, magnetVector, poisonVector, sandlessCasillas);
 
     Camera2D camera;
     initCamera(camera, p);
@@ -147,9 +150,12 @@ SCREEN runTestLevel(){
                 ++it;
             }
         }
+
+        moveTowardsMagnet(rockVector, bombVector, magnetVector, levelMap);
+
         expandPoison(poisonVector, levelMap);
         //move Entities
-        movePlayer(p, rockVector, bombVector, levelMap);
+        movePlayer(p, rockVector, bombVector, magnetVector, levelMap);
         moveEnemies(enemyVector, p, levelMap);
 
         //Chack map-entities sync (temporal only)
@@ -197,6 +203,10 @@ SCREEN runTestLevel(){
                 DrawRectangle(r.x*TILESIZE, r.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
             for(Bomb& b : bombVector)
                 DrawTextureEx(b.texture, (Vector2){(float) b.x*TILESIZE, (float) b.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(b.x*TILESIZE, b.y*TILESIZE, TILESIZE, TILESIZE, BLUE);
+            for(Magnet& m : magnetVector){
+                DrawRectangle(m.x*TILESIZE, m.y*TILESIZE, TILESIZE, TILESIZE, GRAY);
+            }
+
             for(Poison& v : poisonVector)
                 DrawTextureEx(v.texture, (Vector2){(float) v.x*TILESIZE, (float) v.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(v.x*TILESIZE, v.y*TILESIZE, TILESIZE, TILESIZE, PURPLE);
         EndMode2D();
@@ -219,7 +229,7 @@ void initCamera(Camera2D &camera, Player &p){
 
 }
 
-int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector, std::set<std::pair<int,int>> sandlessSet){
+int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Magnet> &magnetVector, std::vector<Poison> &poisonVector, std::set<std::pair<int,int>> sandlessSet){
 
     for(int i = 0; i < levelMap.size(); i++) {
         for(int j = 0; j <levelMap[i].size(); j++){
@@ -239,8 +249,11 @@ int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w,
         levelMap[r.x][r.y].isRock = true;
     for(Bomb &b : bombVector)
         levelMap[b.x][b.y].isBomb = true;
+    for(Magnet& m : magnetVector )
+        levelMap[m.x][m.y].isMagnet = true;
     for(Poison& v : poisonVector)
         levelMap[v.x][v.y].isPoison = true;
+
 
     return 0;
 }
@@ -259,7 +272,7 @@ void checkPlayerMovement(Player &p){
     }
 }
 
-void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<std::vector<Casilla>> &map){
+void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Magnet> &magnetVector, std::vector<std::vector<Casilla>> &map){
 
     if(p.moveTime>=MOVE_INTERVAL){
         //Player movement
@@ -284,6 +297,13 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
                             p.y +=1;
                     }
                 }
+                for(Magnet& m : magnetVector){
+                    if(collision(m, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(m, map, 0, -1))
+                            p.y +=1;
+                    }
+                }
             }
             if(Pmov == 'a' && !map[prex-1][prey].isBedrock){
                 p.x -= 1;
@@ -298,6 +318,13 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
                     if(collision(b, p)){
                         //std::cout << "hii" << std::endl;
                         if(!moveObject(b, map, -1, 0))
+                            p.x +=1;
+                    }
+                }
+                for(Magnet& m : magnetVector){
+                    if(collision(m, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(m, map, -1, 0))
                             p.x +=1;
                     }
                 }
@@ -319,6 +346,13 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
                             p.y -=1;
                     }
                 }
+                for(Magnet& m : magnetVector){
+                    if(collision(m, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(m, map, 0, 1))
+                            p.y -=1;
+                    }
+                }
             }
 
             if(Pmov == 'd' && !map[prex+1][prey].isBedrock){
@@ -337,8 +371,14 @@ void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bom
                             p.x -=1;
                     }
                 }
+                for(Magnet& m : magnetVector){
+                    if(collision(m, p)){
+                        //std::cout << "hii" << std::endl;
+                        if(!moveObject(m, map, 1, 0))
+                            p.x -=1;
+                    }
+                }
             }
-
             map[p.x][p.y].isFill = false;
         }
         p.moveTime = 0.0f;
@@ -605,6 +645,41 @@ int checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, st
     if(collision(w,p)) return 1;
 
     return -1;
+}
+
+void moveTowardsMagnet(std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Magnet> &magnetVector, std::vector<std::vector<Casilla>> &map){
+    for(Magnet& m : magnetVector){
+        for(Rock& r : rockVector){
+            int diff;
+            if(r.y == m.y and r.moveTime > MOVE_INTERVAL){
+                diff = r.x-m.x;
+                if(diff > 1){
+                //Move left
+                    moveObject(r, map, -1, 0);
+                }
+                else if(diff < -1){
+                //Move right
+                    moveObject(r, map, 1, 0);
+                }
+                r.moveTime = 0.0f;
+            }
+        }
+        for(Bomb& b : bombVector){
+            int diff;
+            if(b.y == m.y and b.moveTime > MOVE_INTERVAL){
+                diff = b.x-m.x;
+                if(diff > 1){
+                //Move left
+                    moveObject(b, map, -1, 0);
+                }
+                else if(diff < -1){
+                //Move right
+                    moveObject(b, map, 1, 0);
+                }
+                b.moveTime = 0.0f;
+            }
+        }
+    }
 }
 
 template <class T, class U>

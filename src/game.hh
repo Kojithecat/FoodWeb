@@ -89,6 +89,15 @@ struct Poison{
 
 };
 
+struct Magnet{
+    int x;
+    int y;
+    Texture2D texture;
+
+    Magnet(int startX, int startY) : x(startX), y(startY) {}
+
+};
+
 struct LevelGoal{
     int x;
     int y;
@@ -104,7 +113,9 @@ struct Casilla{
     bool isRock = false;
     bool isGoal = false;
     bool isBomb = false;
+    bool isMagnet = false;
     bool isBedrock = false;
+
     bool isPoison = false;
     //...
 };
@@ -115,7 +126,7 @@ SCREEN runTestLevel();
 
 void initCamera(Camera2D &camera, Player &p);
 
-int fillMap(std::vector<std::vector<Casilla>> &levelMap, Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector, std::set<std::pair<int,int>> sandlessSet);
+int fillMap(std::vector<std::vector<Casilla>> &levelMap, Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Magnet> &magnetVector, std::vector<Poison> &poisonVector, std::set<std::pair<int,int>> sandlessSet);
 
 Player initPlayer(int x, int y);
 
@@ -129,7 +140,7 @@ LevelGoal initGoal(int x, int y, bool open);
 
 void checkPlayerMovement(Player &p);
 
-void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<std::vector<Casilla>> &map);
+void movePlayer(Player &p, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Magnet> &magnetVector, std::vector<std::vector<Casilla>> &map);
 
 void moveEnemies(std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
 
@@ -142,6 +153,8 @@ void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<s
 int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<std::vector<Casilla>> &map);
 
 void expandPoison(std::vector<Poison> &poisonVector, std::vector<std::vector<Casilla>> &map);
+
+void moveTowardsMagnet(std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Magnet> &magnetVector, std::vector<std::vector<Casilla>> &map);
 
 template<class T>
 int moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay);
