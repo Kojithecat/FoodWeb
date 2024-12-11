@@ -19,9 +19,13 @@ std::uniform_int_distribution<u32> distribute(1,4);
 
 int width = 30;
 int height = 20;
+bool immortal = false;
+float resetTimer = 0.0f;
 
 const int SCREEN_TILES_X = 16;
 const int SCREEN_TILES_Y = 12;
+
+
 
 
 SCREEN showMenuScreen(){
@@ -113,20 +117,32 @@ SCREEN runTestLevel(){
     initCamera(camera, p);
 
     while(!IsKeyPressed(KEY_ESCAPE)){
+        if(IsKeyPressed(KEY_G)){
+            p.immortal = !p.immortal;
+        }
+        if(IsKeyDown(KEY_R)){
+            resetTimer += GetFrameTime();
+            std::cout << resetTimer << std::endl;
+            if(resetTimer > 1.0f){
+                resetTimer = 0.0f;
+                return LVL1;
+            }
+
+        }
+        else resetTimer = 0.0f;
+
         //Check entity collisions
         int updateScreen = checkCollisions(p, w, enemyVector, rockVector, bombVector, poisonVector);
-        if(updateScreen == 0){
+        if(updateScreen == MENUSCREEN){
             //Player death
             return MENUSCREEN;
         }
-        else if(updateScreen == 1){
+        else if(updateScreen == LVL1){
             //Player beats level
             return LVL1;
-
         }
 
         //Update entities moveTimes
-
         p.moveTime += GetFrameTime();
         for(Enemy& e : enemyVector){
             e.moveTime += GetFrameTime();
@@ -159,7 +175,7 @@ SCREEN runTestLevel(){
         moveEnemies(enemyVector, p, levelMap);
 
         //Chack map-entities sync (temporal only)
-        if(isEntityMapSync(p,  levelMap))
+        /*if(isEntityMapSync(p,  levelMap))
             std::cout << "Player Sync" << std::endl;
         else std::cout << "Player not Sync" << std::endl;
         for(Rock &r : rockVector)
@@ -178,7 +194,7 @@ SCREEN runTestLevel(){
             if(isEntityMapSync(v, levelMap))
                 std::cout << "Poison sync" << std::endl;
             else std::cout << "Poison not sync" << std::endl;
-
+*/
         //Camera Target
         updateCamera(camera, p);
 
@@ -535,6 +551,7 @@ void fallRock(Rock &r, std::vector<Enemy> &enemyVector, Player &p, std::vector<s
 
     if( !map[r.x][r.y+1].isBedrock //Rock would not fall outbounds
         && !map[r.x][r.y+1].isFill //The bottom tile is empty
+        && !map[r.x][r.y+1].isRock
         && !(r.x == p.x && r.y + 1 == p.y) //No player is below the rock
         && r.moveTime >= ROCK_FALL_INTERVAL){
         //std::cout << r.y << " " << r.moveTime << std::endl;
@@ -632,7 +649,7 @@ int moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int del
 int checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector){
     for(Enemy& e : enemyVector){
         //std::cout << e.y << std::endl;
-        if(collision(e,p) && !e.dead) return MENUSCREEN;
+        if(collision(e,p) && !e.dead && !p.immortal) return MENUSCREEN;
         for(Rock& r: rockVector)
             if(collision(e,r)) e.dead = true;
         for(Bomb& b: bombVector)
@@ -641,8 +658,8 @@ int checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, st
             if(collision(e,v)) e.dead = true;
     }
     for(Poison& v : poisonVector)
-        if(collision(v,p)) return 0;
-    if(collision(w,p)) return 1;
+        if(collision(v,p) && !p.immortal) return MENUSCREEN;
+    if(collision(w,p)) return LVL1;
 
     return -1;
 }

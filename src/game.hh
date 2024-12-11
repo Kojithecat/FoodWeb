@@ -40,7 +40,9 @@ struct Player {
     int y;
     float moveTime = 0.0f;
     std::queue<char> playerMoves;
-    Texture2D texture = LoadTexture("../assets/character_cutre.png");;
+    bool immortal = false;
+    Texture2D texture = LoadTexture("../assets/character_cutre.png");
+
     //std:vector<Item> objects;
 
     Player(int startX, int startY) : x(startX), y(startY) {}
