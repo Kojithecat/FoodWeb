@@ -26,8 +26,6 @@ const int SCREEN_TILES_X = 16;
 const int SCREEN_TILES_Y = 12;
 
 
-
-
 SCREEN showMenuScreen(){
     BeginDrawing();
 
@@ -50,9 +48,15 @@ SCREEN runTestLevel(){
     //Define entities
     Player p = Player(1, 1);
 
-    Enemy e1 = Enemy(13,6,RAT);
-    Enemy e2 = Enemy(6, 6, BAT);
-    Enemy e3 = Enemy(12,12, SNAKE);
+    Enemy e1 = Enemy(13,6,MANTIS);
+    Enemy e2 = Enemy(6, 6, RAT);
+    Enemy e3 = Enemy(12,12, SCORPION);
+
+    e1.texture = LoadTexture("../assets/mantis.png");
+
+    e2.texture = LoadTexture("../assets/rat.png");
+
+    e3.texture = LoadTexture("../assets/scorpion.png");
 
     //Rock r1 = initRock(6, 3);
     Rock r1 = Rock(13, 4);
@@ -68,7 +72,7 @@ SCREEN runTestLevel(){
 
     Poison v = Poison(3,10);
 
-    LevelGoal w = LevelGoal(width - 2, height - 2, true);
+    LevelGoal w = LevelGoal(width - 2, height - 2, false);
 
     std::vector<Enemy> enemyVector;
     std::vector<Rock> rockVector;
@@ -159,6 +163,7 @@ SCREEN runTestLevel(){
         checkPlayerMovement(p);
         for(Rock& r : rockVector)
             fallRock(r, enemyVector, p, levelMap);
+
         for (auto it = bombVector.begin(); it != bombVector.end(); ) {
             if (fallBomb(*it, enemyVector, p, levelMap)) {
                 it = bombVector.erase(it);
@@ -173,6 +178,17 @@ SCREEN runTestLevel(){
         //move Entities
         movePlayer(p, rockVector, bombVector, magnetVector, levelMap);
         moveEnemies(enemyVector, p, levelMap);
+
+
+        //Remove dead enemies
+        for (auto it = enemyVector.begin(); it != enemyVector.end(); )
+            if (it->dead)
+                it = enemyVector.erase(it);
+            else
+                ++it;
+
+        if(enemyVector.size() == 0)
+            w.open = true;
 
         //Chack map-entities sync (temporal only)
         /*if(isEntityMapSync(p,  levelMap))
@@ -210,13 +226,17 @@ SCREEN runTestLevel(){
 
                     }
                 }
-            DrawRectangle(w.x*TILESIZE, w.y*TILESIZE, TILESIZE, TILESIZE, GREEN);
+            if(w.open)
+                DrawRectangle(w.x*TILESIZE, w.y*TILESIZE, TILESIZE, TILESIZE, GREEN);
+            else
+                DrawRectangle(w.x*TILESIZE, w.y*TILESIZE, TILESIZE, TILESIZE, DARKGREEN);
             DrawTextureEx(p.texture, (Vector2){(float) p.x*TILESIZE, (float) p.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(p.x*TILESIZE, p.y*TILESIZE, TILESIZE, TILESIZE, YELLOW);
             for(Enemy& e : enemyVector)
-                if(!e.dead)
-                    DrawTextureEx(e.texture, (Vector2){(float) e.x*TILESIZE, (float) e.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(e.x*TILESIZE, e.y*TILESIZE, TILESIZE, TILESIZE, RED);
+                //if(!e.dead)
+                DrawTextureEx(e.texture, (Vector2){(float) e.x*TILESIZE, (float) e.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(e.x*TILESIZE, e.y*TILESIZE, TILESIZE, TILESIZE, RED);
             for(Rock& r : rockVector)
-                DrawRectangle(r.x*TILESIZE, r.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
+                //DrawRectangle(r.x*TILESIZE, r.y*TILESIZE, TILESIZE, TILESIZE, BROWN);
+                DrawTextureEx(r.texture, (Vector2){(float) r.x*TILESIZE, (float) r.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(e.x*TILESIZE, e.y*TILESIZE, TILESIZE, TILESIZE, RED);
             for(Bomb& b : bombVector)
                 DrawTextureEx(b.texture, (Vector2){(float) b.x*TILESIZE, (float) b.y*TILESIZE}, 0.0f, 2.0f, WHITE);//DrawRectangle(b.x*TILESIZE, b.y*TILESIZE, TILESIZE, TILESIZE, BLUE);
             for(Magnet& m : magnetVector){
@@ -261,12 +281,19 @@ int fillMap(std::vector<std::vector<Casilla>> &levelMap,Player &p, LevelGoal &w,
     levelMap[w.x][w.y].isGoal = true;
     for(Enemy& e : enemyVector)
         levelMap[e.x][e.y].isEnemy = true;
-    for(Rock& r : rockVector)
+    for(Rock& r : rockVector){
         levelMap[r.x][r.y].isRock = true;
-    for(Bomb &b : bombVector)
+        levelMap[r.x][r.y].isFill = false;
+    }
+    for(Bomb &b : bombVector){
         levelMap[b.x][b.y].isBomb = true;
-    for(Magnet& m : magnetVector )
+        levelMap[b.x][b.y].isFill = false;
+    }
+    for(Magnet& m : magnetVector ){
         levelMap[m.x][m.y].isMagnet = true;
+        levelMap[m.x][m.y].isFill = false;
+    }
+
     for(Poison& v : poisonVector)
         levelMap[v.x][v.y].isPoison = true;
 
@@ -569,6 +596,7 @@ int fallBomb(Bomb &b, std::vector<Enemy> &enemyVector, Player &p, std::vector<st
 
     if(!map[b.x][b.y+1].isBedrock //bomb would not fall outbounds
         && !map[b.x][b.y+1].isFill //The bottom tile is empty
+        && !map[b.x][b.y+1].isRock
         && !(b.x == p.x && b.y + 1 == p.y) //No player is below the rock
         && b.moveTime >= ROCK_FALL_INTERVAL){
         //std::cout << b.y << " " << r.moveTime << std::endl;
@@ -659,7 +687,7 @@ int checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, st
     }
     for(Poison& v : poisonVector)
         if(collision(v,p) && !p.immortal) return MENUSCREEN;
-    if(collision(w,p)) return LVL1;
+    if(collision(w,p) and w.open) return LVL1;
 
     return -1;
 }

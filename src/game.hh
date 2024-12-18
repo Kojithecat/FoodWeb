@@ -13,6 +13,7 @@ const float SCORPION_MOVE_INTERVAL = 2*MOVE_INTERVAL;
 const float RAT_MOVE_INTERVAL = MOVE_INTERVAL;
 const float BAT_MOVE_INTERVAL = 3*MOVE_INTERVAL;
 const float SNAKE_MOVE_INTERVAL = 5*MOVE_INTERVAL;
+const float MANTIS_MOVE_INTERVAL = 3*MOVE_INTERVAL;
 const float ROCK_FALL_INTERVAL = MOVE_INTERVAL;
 const float POISON_EXPAND_INTERVAL = 10*MOVE_INTERVAL;
 
@@ -31,9 +32,10 @@ typedef enum {
     RAT,
     BAT,
     SNAKE,
+    MANTIS
 } ETYPE;
 
-const std::vector<float> enemyInterval = {SCORPION_MOVE_INTERVAL, RAT_MOVE_INTERVAL, BAT_MOVE_INTERVAL, SNAKE_MOVE_INTERVAL};
+const std::vector<float> enemyInterval = {SCORPION_MOVE_INTERVAL, RAT_MOVE_INTERVAL, BAT_MOVE_INTERVAL, SNAKE_MOVE_INTERVAL, MANTIS_MOVE_INTERVAL};
 
 struct Player {
     int x;
@@ -53,7 +55,7 @@ struct Enemy {
     int y;
     bool dead = false;
     float moveTime = 0.0f;
-    Texture2D texture = LoadTexture("../assets/rat.png");
+    Texture2D texture;
     ETYPE type;
     float intervalMove;
 
@@ -64,7 +66,7 @@ struct Rock{
     int x;
     int y;
     float moveTime = 0.0f;
-    Texture2D texture;
+    Texture2D texture = LoadTexture("../assets/metal_ball.png");
     bool falling = false;
 
     Rock(int startX, int startY) : x(startX), y(startY) {}
@@ -103,7 +105,7 @@ struct Magnet{
 struct LevelGoal{
     int x;
     int y;
-    bool open;
+    bool open = false;
 
     LevelGoal(int startX, int startY, bool open) : x(startX), y(startY), open(open) {}
 };
