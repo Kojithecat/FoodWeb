@@ -111,7 +111,7 @@ struct LevelGoal{
 };
 
 struct Casilla{
-    bool isFill;
+    bool isFill = true;
     bool isEnemy = false;
     bool isPlayer = false;
     bool isRock = false;
