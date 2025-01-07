@@ -12,6 +12,6 @@ void loadMap(std::vector<std::string> &level, std::vector<std::vector<Casilla>> 
 
 std::vector<std::string> readLevel(int levelNum);
 
-void loadEntities(std::vector<std::string> &level, Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Magnet> &magnetVector, std::vector<Poison> &poisonVector);
+void loadEntities(std::vector<std::string> &level, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Magnet> &magnetVector, std::vector<Poison> &poisonVector);
 
 #endif

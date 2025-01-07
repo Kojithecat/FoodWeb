@@ -53,7 +53,7 @@ SCREEN runTestLevel(){
     std::vector<std::vector<Casilla>> levelMap;
     loadMap(levelText, levelMap);
 
-    Player p = Player(1, 1);
+    /*
 
     Enemy e1 = Enemy(13,6,MANTIS);
     Enemy e2 = Enemy(6, 6, RAT);
@@ -78,16 +78,18 @@ SCREEN runTestLevel(){
     Magnet m = Magnet(20,5);
 
     Poison v = Poison(3,10);
+    */
 
+    Player p = Player(1, 1);
     LevelGoal w = LevelGoal(width - 2, height - 2, false);
-
     std::vector<Enemy> enemyVector;
     std::vector<Rock> rockVector;
     std::vector<Bomb> bombVector;
     std::vector<Magnet> magnetVector;
     std::vector<Poison> poisonVector;
 
-    enemyVector.push_back(e1);
+    loadEntities(levelText, enemyVector, rockVector, bombVector, magnetVector, poisonVector);
+    /*enemyVector.push_back(e1);
     enemyVector.push_back(e2);
     enemyVector.push_back(e3);
     //rockVector.push_back(r1);
@@ -120,7 +122,7 @@ SCREEN runTestLevel(){
         for(int x = 1; x < width - 1; x++){
             sandlessCasillas.insert(std::make_pair(x,y));
         }
-    }
+    }*/
 
     //fillMap(levelMap, p, w, enemyVector, rockVector, bombVector, magnetVector, poisonVector, sandlessCasillas);
 
