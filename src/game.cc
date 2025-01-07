@@ -1,5 +1,6 @@
 #include "game.hh"
 #include "raylib.h"
+#include "levelLoader.hh"
 #include <type_traits>
 #include <iostream>
 #include <cstdint>
@@ -17,8 +18,8 @@ const u32 seed = os_seed();
 engine generator(seed);
 std::uniform_int_distribution<u32> distribute(1,4);
 
-int width = 30;
-int height = 20;
+int width;
+int height;
 bool immortal = false;
 float resetTimer = 0.0f;
 
@@ -39,13 +40,19 @@ SCREEN showMenuScreen(){
 }
 
 SCREEN runTestLevel(){
-    std::vector<std::vector<Casilla>> levelMap(width, std::vector<Casilla>(height));
     //Set textures
     Texture2D sandTexture = LoadTexture("../assets/arena.png");
     Texture2D bedrockTexture = LoadTexture("../assets/bedrock_cutre.png");
-       //RenderTexture2D background = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
+    //RenderTexture2D background = LoadRenderTexture(GetScreenWidth(), GetScreenHeight());
     SetTextureFilter(bedrockTexture, TEXTURE_FILTER_BILINEAR);
     //Define entities
+
+    std::vector<std::string> levelText = readLevel(1);
+    width = levelText[0].size()+2;
+    height = levelText.size()+2;
+    std::vector<std::vector<Casilla>> levelMap;
+    loadMap(levelText, levelMap);
+
     Player p = Player(1, 1);
 
     Enemy e1 = Enemy(13,6,MANTIS);
@@ -115,7 +122,7 @@ SCREEN runTestLevel(){
         }
     }
 
-    fillMap(levelMap, p, w, enemyVector, rockVector, bombVector, magnetVector, poisonVector, sandlessCasillas);
+    //fillMap(levelMap, p, w, enemyVector, rockVector, bombVector, magnetVector, poisonVector, sandlessCasillas);
 
     Camera2D camera;
     initCamera(camera, p);
