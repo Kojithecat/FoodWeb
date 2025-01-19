@@ -22,6 +22,8 @@ int width;
 int height;
 bool immortal = false;
 float resetTimer = 0.0f;
+bool playerDeath = false;
+bool playerWin = false;
 
 const int SCREEN_TILES_X = 16;
 const int SCREEN_TILES_Y = 12;
@@ -39,7 +41,7 @@ SCREEN showMenuScreen(){
     else return MENUSCREEN;
 }
 
-SCREEN runTestLevel(){
+SCREEN runLevel(int lvl){
     //Set textures
     Texture2D sandTexture = LoadTexture("../assets/arena.png");
     Texture2D bedrockTexture = LoadTexture("../assets/bedrock_cutre.png");
@@ -47,11 +49,14 @@ SCREEN runTestLevel(){
     SetTextureFilter(bedrockTexture, TEXTURE_FILTER_BILINEAR);
     //Define entities
 
-    std::vector<std::string> levelText = readLevel(1);
+    std::vector<std::string> levelText = readLevel(lvl);
     width = levelText[0].size()+2;
     height = levelText.size()+2;
     std::vector<std::vector<Casilla>> levelMap;
     loadMap(levelText, levelMap);
+
+    playerDeath = false;
+    playerWin = false;
 
     /*
 
@@ -144,16 +149,6 @@ SCREEN runTestLevel(){
         }
         else resetTimer = 0.0f;
 
-        //Check entity collisions
-        int updateScreen = checkCollisions(p, w, enemyVector, rockVector, bombVector, poisonVector);
-        if(updateScreen == MENUSCREEN){
-            //Player death
-            return MENUSCREEN;
-        }
-        else if(updateScreen == LVL1){
-            //Player beats level
-            return LVL1;
-        }
 
         //Update entities moveTimes
         p.moveTime += GetFrameTime();
@@ -186,7 +181,9 @@ SCREEN runTestLevel(){
         expandPoison(poisonVector, levelMap);
         //move Entities
         movePlayer(p, rockVector, bombVector, magnetVector, levelMap);
-        moveEnemies(enemyVector, p, levelMap);
+
+        //Check entity collisions
+        checkCollisions(p, w, enemyVector, rockVector, bombVector, poisonVector);
 
 
         //Remove dead enemies
@@ -199,7 +196,11 @@ SCREEN runTestLevel(){
         if(enemyVector.size() == 0)
             w.open = true;
 
-        //Chack map-entities sync (temporal only)
+
+        moveEnemies(enemyVector, p, levelMap);
+
+
+                //Chack map-entities sync (temporal only)
         /*if(isEntityMapSync(p,  levelMap))
             std::cout << "Player Sync" << std::endl;
         else std::cout << "Player not Sync" << std::endl;
@@ -257,10 +258,20 @@ SCREEN runTestLevel(){
         EndMode2D();
         EndDrawing();
 
+        if(playerDeath){
+            //Player death
+            return MENUSCREEN;
+        }
+        else if(playerWin){
+            //Player beats level
+            return nextLevel(lvl);
+        }
         //std::cout << e1.x << " " << e1.y << std::endl;
     }
     UnloadTexture(sandTexture);
     UnloadTexture(bedrockTexture);
+
+
 
     return MENUSCREEN;
 }
@@ -538,20 +549,20 @@ void moveEnemyRandom(Enemy &e, std::vector<std::vector<Casilla>> &map){
 
 void moveEnemyTowardsPlayer(Enemy &e, Player &p, std::vector<std::vector<Casilla>> &map){
     //Implement A* pr Djikstra
-    bool leftFilled = e.x > 0 && map[e.x-1][e.y].isFill;
-    bool rightFilled = e.x < width - 1 && map[e.x+1][e.y].isFill;
-    bool topFilled = e.y > 0 && map[e.x][e.y-1].isFill;
-    bool botFilled = e.y < height - 1 && map[e.x][e.y+1].isFill;
+    bool leftFilled = map[e.x-1][e.y].isFill || map[e.x-1][e.y].isRock || map[e.x-1][e.y].isBomb || map[e.x-1][e.y].isBedrock;
+    bool rightFilled = map[e.x+1][e.y].isFill || map[e.x+1][e.y].isRock || map[e.x+1][e.y].isBomb || map[e.x+1][e.y].isBedrock;
+    bool topFilled = map[e.x][e.y-1].isFill || map[e.x][e.y-1].isRock || map[e.x][e.y-1].isBomb || map[e.x][e.y-1].isBedrock;
+    bool botFilled = map[e.x][e.y+1].isFill || map[e.x][e.y+1].isRock || map[e.x][e.y+1].isBomb || map[e.x][e.y+1].isBedrock;
     //std::cout << leftFilled << rightFilled << topFilled << botFilled << std::endl;
 
     std::vector<std::pair<int,int>> allowedMovements;
-    if(e.y > 0 && !topFilled && !map[e.x][e.y-1].isBedrock)
+    if(e.y > 0 && !topFilled)
         allowedMovements.push_back(std::make_pair(e.x, e.y - 1));
-    if(e.x > 0 && !leftFilled && !map[e.x-1][e.y].isBedrock)
+    if(e.x > 0 && !leftFilled)
         allowedMovements.push_back(std::make_pair(e.x - 1, e.y));
-    if(height - 1 > e.y && !botFilled && !map[e.x][e.y+1].isBedrock)
+    if(height - 1 > e.y && !botFilled)
         allowedMovements.push_back(std::make_pair(e.x, e.y + 1));
-    if(width - 1 > e.x && !rightFilled && !map[e.x+1][e.y].isBedrock)
+    if(width - 1 > e.x && !rightFilled)
         allowedMovements.push_back(std::make_pair(e.x + 1, e.y));
 
              //std::cout << "Hii" << std::endl;
@@ -638,19 +649,19 @@ void expandPoison(std::vector<Poison> &poisonVector, std::vector<std::vector<Cas
     for(Poison& v : poisonVector){
         if(v.moveTime > POISON_EXPAND_INTERVAL){
 
-            if(!map[v.x+1][v.y].isFill && !map[v.x+1][v.y].isBedrock && !map[v.x+1][v.y].isPoison) {
+            if(!map[v.x+1][v.y].isFill && !map[v.x+1][v.y].isBedrock && !map[v.x+1][v.y].isPoison && !map[v.x+1][v.y].isRock && !map[v.x+1][v.y].isBomb && !map[v.x+1][v.y].isMagnet) {
                 map[v.x+1][v.y].isPoison = true;
                 newPoisonCoords.insert(std::make_pair(v.x+1,v.y));
             }
-            if(!map[v.x-1][v.y].isFill && !map[v.x-1][v.y].isBedrock && !map[v.x-1][v.y].isPoison) {
+            if(!map[v.x-1][v.y].isFill && !map[v.x-1][v.y].isBedrock && !map[v.x-1][v.y].isPoison && !map[v.x-1][v.y].isRock && !map[v.x-1][v.y].isBomb && !map[v.x-1][v.y].isMagnet) {
                 map[v.x-1][v.y].isPoison = true;
                 newPoisonCoords.insert(std::make_pair(v.x-1,v.y));
             }
-            if(!map[v.x][v.y+1].isFill && !map[v.x][v.y+1].isBedrock && !map[v.x][v.y+1].isPoison) {
+            if(!map[v.x][v.y+1].isFill && !map[v.x][v.y+1].isBedrock && !map[v.x][v.y+1].isPoison && !map[v.x][v.y+1].isRock && !map[v.x][v.y+1].isBomb && !map[v.x][v.y+1].isMagnet) {
                 map[v.x][v.y+1].isPoison = true;
                 newPoisonCoords.insert(std::make_pair(v.x,v.y+1));
             }
-            if(!map[v.x][v.y-1].isFill && !map[v.x][v.y-1].isBedrock && !map[v.x][v.y-1].isPoison) {
+            if(!map[v.x][v.y-1].isFill && !map[v.x][v.y-1].isBedrock && !map[v.x][v.y-1].isPoison && !map[v.x][v.y-1].isRock && !map[v.x][v.y-1].isBomb && !map[v.x][v.y-1].isMagnet) {
                 map[v.x][v.y-1].isPoison = true;
                 newPoisonCoords.insert(std::make_pair(v.x,v.y-1));
             }
@@ -683,10 +694,10 @@ int moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int del
     return 1; //Movement possible and done
 }
 
-int checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector){
+void checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector){
     for(Enemy& e : enemyVector){
         //std::cout << e.y << std::endl;
-        if(collision(e,p) && !e.dead && !p.immortal) return MENUSCREEN;
+        if(collision(e,p) && !e.dead && !p.immortal) playerDeath = true;
         for(Rock& r: rockVector)
             if(collision(e,r)) e.dead = true;
         for(Bomb& b: bombVector)
@@ -695,10 +706,9 @@ int checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, st
             if(collision(e,v)) e.dead = true;
     }
     for(Poison& v : poisonVector)
-        if(collision(v,p) && !p.immortal) return MENUSCREEN;
-    if(collision(w,p) and w.open) return LVL1;
+        if(collision(v,p) && !p.immortal) playerDeath = true;
+    if(collision(w,p) and w.open) playerWin = true;
 
-    return -1;
 }
 
 void moveTowardsMagnet(std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Magnet> &magnetVector, std::vector<std::vector<Casilla>> &map){
@@ -764,4 +774,29 @@ void updateCamera(Camera2D &camera, Player &p){
     float targetx = p.x*TILESIZE - SCREEN_TILES_X*TILESIZE/2.0;
     float targety = p.y*TILESIZE - SCREEN_TILES_Y*TILESIZE/2.0;
     camera.target = {targetx, targety};
+}
+
+SCREEN nextLevel(int lvl){
+    switch(lvl){
+    case 1:
+        return LVL2;
+        break;
+    case 2:
+        return LVL3;
+        break;
+    case 3:
+        return LVL4;
+        break;
+    case 4:
+        return LVL5;
+        break;
+    case 5:
+        //TODO return credits
+        return MENUSCREEN;
+        break;
+    default:
+        return MENUSCREEN;
+
+    }
+
 }

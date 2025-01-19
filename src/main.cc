@@ -19,10 +19,26 @@ int main(){
     {
         switch(currentScreen){
             case MENUSCREEN:
-            currentScreen = showMenuScreen();
-            break;
+                currentScreen = showMenuScreen();
+                break;
             case LVL1:
-            currentScreen = runTestLevel();
+                currentScreen = runLevel(1);
+                break;
+            case LVL2:
+                currentScreen = runLevel(2);
+                break;
+            case LVL3:
+                currentScreen = runLevel(3);
+                break;
+            case LVL4:
+                currentScreen = runLevel(4);
+                break;
+            case LVL5:
+                currentScreen = runLevel(5);
+                break;
+            defalt:
+                currentScreen = MENUSCREEN;
+
             //currentScreen = runLevel(pathToLVL,LVL1,LVL2)
 
         }

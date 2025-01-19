@@ -9,19 +9,22 @@
 #define TILESIZE 64
 
 const float MOVE_INTERVAL = 0.2f;
-const float SCORPION_MOVE_INTERVAL = 2*MOVE_INTERVAL;
-const float RAT_MOVE_INTERVAL = MOVE_INTERVAL;
-const float BAT_MOVE_INTERVAL = 3*MOVE_INTERVAL;
-const float SNAKE_MOVE_INTERVAL = 5*MOVE_INTERVAL;
-const float MANTIS_MOVE_INTERVAL = 3*MOVE_INTERVAL;
+const float SCORPION_MOVE_INTERVAL = 2*MOVE_INTERVAL + GetFrameTime();
+const float RAT_MOVE_INTERVAL = MOVE_INTERVAL + GetFrameTime();
+const float BAT_MOVE_INTERVAL = 3*MOVE_INTERVAL + GetFrameTime();
+const float SNAKE_MOVE_INTERVAL = 5*MOVE_INTERVAL + GetFrameTime();
+const float MANTIS_MOVE_INTERVAL = 3*MOVE_INTERVAL + GetFrameTime();
 const float ROCK_FALL_INTERVAL = MOVE_INTERVAL;
-const float POISON_EXPAND_INTERVAL = 10*MOVE_INTERVAL;
+const float POISON_EXPAND_INTERVAL = 6*MOVE_INTERVAL + GetFrameTime();
 
 
 
 typedef enum {
     LVL1,
     LVL2,
+    LVL3,
+    LVL4,
+    LVL5,
     //...
     MENUSCREEN,
 
@@ -126,7 +129,7 @@ struct Casilla{
 
 SCREEN showMenuScreen();
 
-SCREEN runTestLevel();
+SCREEN runLevel(int lvl);
 
 void initCamera(Camera2D &camera, Player &p);
 
@@ -163,7 +166,7 @@ void moveTowardsMagnet(std::vector<Rock> &rockVector, std::vector<Bomb> &bombVec
 template<class T>
 int moveObject(T &o, std::vector<std::vector<Casilla>> &map, int deltax, int deltay);
 
-int checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector);
+void checkCollisions(Player &p, LevelGoal &w, std::vector<Enemy> &enemyVector, std::vector<Rock> &rockVector, std::vector<Bomb> &bombVector, std::vector<Poison> &poisonVector);
 
 template <class T, class U>
 bool collision(const T& e1, const U& e2);
@@ -172,5 +175,7 @@ template <class T>
 bool isEntityMapSync(const T& o, const std::vector<std::vector<Casilla>> &map);
 
 void updateCamera(Camera2D &camera, Player &p);
+
+SCREEN nextLevel(int lvl);
 
 #endif

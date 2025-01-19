@@ -23,6 +23,10 @@ void loadMap(std::vector<std::string> &level, std::vector<std::vector<Casilla>> 
                 levelMap[j+1][i+1].isGoal = true;
                 levelMap[j+1][i+1].isFill = false;
             }
+            else if(level[i][j] == '$'){
+                levelMap[j+1][i+1].isBedrock = true;
+                levelMap[j+1][i+1].isFill = false;
+            }
             else if(level[i][j] == 'N'){
                 levelMap[j+1][i+1].isBomb = true;
                 levelMap[j+1][i+1].isFill = false;
